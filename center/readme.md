@@ -129,6 +129,26 @@ initial_data:
 
 
 
-
+Реализуй, если type Host struct {
+	ID        int       `json:"id" db:"id"`
+	Hostname  string    `json:"hostname" binding:"required" db:"hostname"`
+	IPAddress string    `json:"ip_address" binding:"required" db:"ip_address"`
+	Priority  int       `json:"priority" db:"priority"`
+	IsMaster  bool      `json:"is_master" db:"is_master"`
+	Status    string    `json:"status" db:"status"`
+	LastCheck time.Time `json:"last_check" db:"last_check"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+} CREATE TABLE hosts (
+    id SERIAL PRIMARY KEY,
+    hostname VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(50) NOT NULL,
+    priority INTEGER DEFAULT 0,
+    is_master BOOLEAN DEFAULT FALSE,
+    status VARCHAR(50) DEFAULT 'unknown',
+    last_check TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
 
 

@@ -4,44 +4,50 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(r *gin.Engine) {
-	api := r.Group("/api")
-
-	// Маршруты для хостов
-	hosts := api.Group("/hosts")
+func SetupRoutes(router *gin.Engine) {
+	// API группа
+	api := router.Group("/api")
 	{
-		hosts.GET("", GetHosts)
-		hosts.GET("/:id", GetHost)
-		hosts.POST("", CreateHost)
-		hosts.PUT("/:id", UpdateHost)
-		hosts.DELETE("/:id", DeleteHost)
-		hosts.GET("/master", GetMasterHost)
-		hosts.PUT("/:id/master", SetMasterHost)
+		// Хосты
+		hosts := api.Group("/hosts")
+		{
+			hosts.GET("", GetHosts)
+			hosts.GET("/:id", GetHostByID)
+			hosts.POST("", CreateHost)
+			hosts.PUT("/:id", UpdateHost)
+			hosts.DELETE("/:id", DeleteHost)
+			hosts.GET("/master", GetMasterHost)
+			hosts.PUT("/:id/master", SetMasterHost)
 
-		// Маршруты для процессов
-		hosts.GET("/:id/processes", GetHostProcesses)
-		hosts.POST("/:id/processes", AddHostProcess)
-		hosts.DELETE("/:id/processes/:process_id", DeleteHostProcess)
+			// Процессы хоста
+			hosts.GET("/:id/processes", GetProcessesByHostID)
+			hosts.POST("/:id/processes", CreateProcess)
+			hosts.DELETE("/:id/processes/:process_id", DeleteProcess)
 
-		// Маршруты для контейнеров
-		hosts.GET("/:id/containers", GetHostContainers)
-		hosts.POST("/:id/containers", AddHostContainer)
-		hosts.DELETE("/:id/containers/:container_id", DeleteHostContainer)
+			// Контейнеры хоста
+			hosts.GET("/:id/containers", GetContainersByHostID)
+			hosts.POST("/:id/containers", CreateContainer)
+			hosts.DELETE("/:id/containers/:container_id", DeleteContainer)
 
-		// Маршруты для правил оповещений
-		hosts.GET("/:id/alerts", GetHostAlerts)
-		hosts.POST("/:id/alerts", AddHostAlert)
-		hosts.PUT("/:id/alerts/:alert_id", UpdateHostAlert)
-		hosts.DELETE("/:id/alerts/:alert_id", DeleteHostAlert)
-	}
+			// Правила оповещений хоста
+			hosts.GET("/:id/alerts", GetAlertsByHostID)
+			hosts.POST("/:id/alerts", CreateAlert)
+			hosts.PUT("/:id/alerts/:alert_id", UpdateAlert)
+			hosts.DELETE("/:id/alerts/:alert_id", DeleteAlert)
+			hosts.PATCH("/:id/alerts/:alert_id/status", EnableDisableAlert)
+		}
 
-	// Маршруты для метрик
-	metrics := api.Group("/metrics")
-	{
-		metrics.POST("", ReceiveMetrics)
-		metrics.GET("/:host_id", GetHostMetrics)
-		metrics.GET("/:host_id/processes", GetHostProcessMetrics)
-		metrics.GET("/:host_id/containers", GetHostContainerMetrics)
-		metrics.GET("/:host_id/network", GetHostNetworkMetrics)
+		// Метрики
+		metrics := api.Group("/metrics")
+		{
+			metrics.POST("", ReceiveMetrics)                         // Приём метрик от агентов
+			metrics.GET("/:host_id/system", GetSystemMetrics)        // Системные метрики
+			metrics.GET("/:host_id/processes", GetProcessMetrics)    // Метрики процессов
+			metrics.GET("/:host_id/containers", GetContainerMetrics) // Метрики контейнеров
+			metrics.GET("/:host_id/network", GetNetworkMetrics)      // Сетевые метрики
+		}
+
+		// Проверка состояния системы
+		api.GET("/health", GetHealth)
 	}
 }
