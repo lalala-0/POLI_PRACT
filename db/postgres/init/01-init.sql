@@ -24,3 +24,12 @@ CREATE TABLE host_containers (
     host_id INTEGER REFERENCES hosts(id) ON DELETE CASCADE,
     container_name VARCHAR(255) NOT NULL
 );
+
+CREATE TABLE alert_rules (
+    id SERIAL PRIMARY KEY,
+    host_id INT REFERENCES hosts(id) ON DELETE CASCADE,
+    metric_name VARCHAR(100) NOT NULL,
+    threshold_value FLOAT NOT NULL,
+    condition VARCHAR(10) NOT NULL,
+    enabled BOOLEAN DEFAULT TRUE
+);
