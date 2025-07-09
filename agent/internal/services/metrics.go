@@ -84,6 +84,7 @@ func (s *MetricsService) IsContainerConfigSet() bool {
 }
 
 // ProcessMetrics обрабатывает собранные метрики
+// TODO
 func (s *MetricsService) ProcessMetrics(metrics models.AgentMetrics) {
 	// Здесь может быть логика анализа или фильтрации метрик
 }
