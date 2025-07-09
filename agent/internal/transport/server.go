@@ -2,7 +2,7 @@ package transport
 
 import (
 	"agent/internal/models"
-	"agent/internal/services"
+	services "agent/internal/services"
 	"context"
 	"log"
 	"net/http"
@@ -46,6 +46,7 @@ func (s *Server) setupRoutes() {
 	// API для обновления конфигурации
 	s.router.POST("/config/processes", s.updateProcessConfig)
 	s.router.POST("/config/containers", s.updateContainerConfig)
+	s.router.POST("/config/interval", s.updateCollectionInterval)
 }
 
 // Start запускает HTTP-сервер и слушает обновления метрик
