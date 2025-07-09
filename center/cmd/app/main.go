@@ -1,9 +1,9 @@
 package main
 
 import (
-	"POLI_PRACT/api"
-	"POLI_PRACT/config"
-	"POLI_PRACT/db"
+	"POLI_PRACT/center/api"
+	"POLI_PRACT/center/config"
+	"POLI_PRACT/center/internal/database"
 	"github.com/gin-gonic/gin"
 	"log"
 	"os"
@@ -11,11 +11,24 @@ import (
 
 func main() {
 	// Загрузка конфигурации
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
-	}
+	cfg, err := config.LoadConfig("config.yml")
+    if err != nil {
+        log.Fatalf("Failed to load config: %v", err)
+    }
+	// Валидация конфигурации БД
+    if err := cfg.Postgres.Validate(); err != nil {
+        log.Fatalf("Invalid DB config: %v", err)
+    }
 
+    postgresConfig := db.PostgresConfig{
+        Driver:   cfg.Postgres.Driver,
+        Host:     cfg.Postgres.Host,
+        Port:     cfg.Postgres.Port,
+        User:     cfg.Postgres.User,
+        Password: cfg.Postgres.Password,
+        DBName:   cfg.Postgres.DBName,
+        SSLMode:  cfg.Postgres.SSLMode,
+    }
 	// Инициализация подключения к PostgreSQL
 	err = db.InitPostgres(cfg.Postgres.Host, cfg.Postgres.Port,
 		cfg.Postgres.User, cfg.Postgres.Password,

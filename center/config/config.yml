@@ -1,0 +1,80 @@
+server:
+  port: "8080"
+  read_timeout: 30s
+  write_timeout: 30s
+
+postgres:
+  host: "postgres"
+  port: "5432"
+  user: "postgres"
+  password: "password"
+  dbname: "monitoring"
+  sslmode: "disable"
+  driver: "pq"
+
+mongodb:
+  uri: "mongodb://mongo:27017"
+  dbname: "metrics"
+
+metrics:
+  poll_interval: 60s
+  metrics_ttl_days: 14
+  self_check_interval: 5m
+
+  system:
+    enabled: true
+    collect_cpu: true
+    collect_ram: true
+    collect_disks: true
+
+  process:
+    enabled: true
+
+  network:
+    enabled: true
+    monitor_tcp: true
+    monitor_udp: true
+
+  container:
+    enabled: true
+
+logging:
+  level: "info"
+  file_path: "/var/log/monitoring.log"
+  max_size: 100
+  max_backups: 5
+  max_age: 30
+  compress: true
+
+initial_data:
+  hosts:
+    - hostname: "server-1"
+      ip_address: "192.168.1.101"
+      priority: 10
+      is_master: true
+      processes:
+        - "nginx"
+        - "postgres"
+        - "systemd"
+      containers:
+        - "web-app"
+        - "db-postgres"
+      alerts:
+        - metric_name: "cpu_usage_percent"
+          threshold_value: 90.0
+          condition: ">"
+          enabled: true
+        - metric_name: "memory_usage_percent"
+          threshold_value: 85.0
+          condition: ">"
+          enabled: true
+
+    - hostname: "server-2"
+      ip_address: "192.168.1.102"
+      priority: 5
+      is_master: false
+      processes:
+        - "nginx"
+        - "redis"
+      containers:
+        - "cache-redis"
