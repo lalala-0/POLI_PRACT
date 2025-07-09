@@ -17,6 +17,7 @@ type App struct {
 }
 
 func NewApp() *App {
+
 	// Инициализация коллекторов
 	collectors := []collectors.Collector{
 		collectors.NewSystemCollector(),

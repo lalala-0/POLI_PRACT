@@ -11,12 +11,15 @@ import (
 )
 
 func main() {
+	// Загрузка конфигурации из переменных окружения или флагов
+	cfg := config.LoadConfig()
+
 	// Создание контекста с возможностью отмены
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Инициализация приложения
-	application := app.NewApp()
+	application := app.NewApp(cfg)
 
 	// Запуск горутин с использованием WaitGroup
 	var wg sync.WaitGroup

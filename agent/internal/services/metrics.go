@@ -3,6 +3,7 @@ package service
 import (
 	"agent/internal/models"
 	"sync"
+	"time"
 )
 
 // MetricsServiceInterface определяет методы для работы с метриками
@@ -20,6 +21,7 @@ type MetricsServiceInterface interface {
 type MetricsService struct {
 	processConfig      []string
 	containerConfig    []string
+	collectionInterval time.Duration
 	mu                 sync.RWMutex
 	processConfigSet   bool
 	containerConfigSet bool
@@ -84,4 +86,12 @@ func (s *MetricsService) IsContainerConfigSet() bool {
 // ProcessMetrics обрабатывает собранные метрики
 func (s *MetricsService) ProcessMetrics(metrics models.AgentMetrics) {
 	// Здесь может быть логика анализа или фильтрации метрик
+}
+
+// UpdateCollectionInterval обновляет интервал сбора метрик
+func (s *MetricsService) UpdateCollectionInterval(interval time.Duration) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.collectionInterval = interval
+	return nil
 }
