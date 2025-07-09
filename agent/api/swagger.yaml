@@ -1,0 +1,362 @@
+openapi: 3.0.3
+info:
+  title: API агента мониторинга
+  description: API для получения системных метрик и управления конфигурацией агента мониторинга
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Локальный сервер агента мониторинга
+
+paths:
+  /health:
+    get:
+      summary: Проверка работоспособности
+      description: Проверяет, что агент мониторинга работает корректно
+      responses:
+        '200':
+          description: Агент работает нормально
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  message:
+                    type: string
+                    example: Агент работает
+
+  /metrics:
+    get:
+      summary: Получение всех метрик
+      description: Возвращает все собранные агентом метрики
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMetrics'
+
+  /metrics/system:
+    get:
+      summary: Получение системных метрик
+      description: Возвращает метрики CPU, RAM и дискового пространства
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  host_id:
+                    type: string
+                    example: host-1
+                  timestamp:
+                    type: string
+                    format: date-time
+                  system:
+                    $ref: '#/components/schemas/SystemMetrics'
+
+  /metrics/processes:
+    get:
+      summary: Получение метрик процессов
+      description: Возвращает информацию об отслеживаемых процессах
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  host_id:
+                    type: string
+                    example: host-1
+                  timestamp:
+                    type: string
+                    format: date-time
+                  processes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProcessInfo'
+        '400':
+          description: Список отслеживаемых процессов не настроен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Список отслеживаемых процессов не настроен
+
+  /metrics/containers:
+    get:
+      summary: Получение метрик Docker-контейнеров
+      description: Возвращает информацию о Docker-контейнерах
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  host_id:
+                    type: string
+                    example: host-1
+                  timestamp:
+                    type: string
+                    format: date-time
+                  containers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContainerInfo'
+        '400':
+          description: Список отслеживаемых контейнеров не настроен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Список отслеживаемых контейнеров не настроен
+
+  /metrics/network:
+    get:
+      summary: Получение сетевых метрик
+      description: Возвращает информацию об открытых портах
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  host_id:
+                    type: string
+                    example: host-1
+                  timestamp:
+                    type: string
+                    format: date-time
+                  ports:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PortInfo'
+
+  /config/processes:
+    post:
+      summary: Обновление списка отслеживаемых процессов
+      description: Устанавливает список процессов, для которых агент будет собирать метрики
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                processes:
+                  type: array
+                  items:
+                    type: string
+                  example: ["chrome", "firefox", "nginx"]
+      responses:
+        '200':
+          description: Конфигурация успешно обновлена
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Конфигурация процессов обновлена
+        '400':
+          description: Некорректный формат запроса
+        '500':
+          description: Ошибка при обновлении конфигурации
+
+  /config/containers:
+    post:
+      summary: Обновление списка отслеживаемых контейнеров
+      description: Устанавливает список Docker-контейнеров, для которых агент будет собирать метрики
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                containers:
+                  type: array
+                  items:
+                    type: string
+                  example: ["nginx", "postgres", "redis"]
+      responses:
+        '200':
+          description: Конфигурация успешно обновлена
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Конфигурация контейнеров обновлена
+        '400':
+          description: Некорректный формат запроса
+        '500':
+          description: Ошибка при обновлении конфигурации
+
+components:
+  schemas:
+    AgentMetrics:
+      type: object
+      properties:
+        host_id:
+          type: string
+          example: host-1
+        timestamp:
+          type: string
+          format: date-time
+        system:
+          $ref: '#/components/schemas/SystemMetrics'
+        processes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInfo'
+        ports:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortInfo'
+        containers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContainerInfo'
+
+    SystemMetrics:
+      type: object
+      properties:
+        cpu:
+          $ref: '#/components/schemas/CPUMetrics'
+        ram:
+          $ref: '#/components/schemas/RAMMetrics'
+        disk:
+          $ref: '#/components/schemas/DiskMetrics'
+
+    CPUMetrics:
+      type: object
+      properties:
+        usage_percent:
+          type: number
+          format: float
+          example: 45.2
+
+    RAMMetrics:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 16777216000
+        used:
+          type: integer
+          example: 8589934592
+        free:
+          type: integer
+          example: 8187281408
+        usage_percent:
+          type: number
+          format: float
+          example: 51.2
+
+    DiskMetrics:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 500107862016
+        used:
+          type: integer
+          example: 250053931008
+        free:
+          type: integer
+          example: 250053931008
+        usage_percent:
+          type: number
+          format: float
+          example: 50.0
+
+    ProcessInfo:
+      type: object
+      properties:
+        pid:
+          type: integer
+          example: 1234
+        name:
+          type: string
+          example: chrome
+        cpu_percent:
+          type: number
+          format: float
+          example: 5.7
+        mem_percent:
+          type: number
+          format: float
+          example: 3.2
+
+    PortInfo:
+      type: object
+      properties:
+        port:
+          type: integer
+          example: 8080
+        protocol:
+          type: string
+          enum: [TCP, UDP]
+          example: TCP
+        state:
+          type: string
+          example: LISTEN
+
+    ContainerInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 7a6c5d8e9f3b
+        name:
+          type: string
+          example: nginx
+        image:
+          type: string
+          example: nginx:latest
+        status:
+          type: string
+          example: running
+        cpu_percent:
+          type: number
+          format: float
+          example: 1.5
+        mem_percent:
+          type: number
+          format: float
+          example: 0.8
+          
