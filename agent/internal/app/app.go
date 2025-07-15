@@ -2,31 +2,33 @@ package app
 
 import (
 	"agent/internal/collectors"
+	"agent/internal/config"
 	"agent/internal/models"
 	service "agent/internal/services"
 	"agent/internal/transport"
 	"context"
+	"log"
 	"sync"
 	"time"
 )
 
 type App struct {
-	cfg            *config.Config
+	cfg            *config.AgentConfig
 	collectors     []collectors.Collector
 	metricsService *service.MetricsService
 }
 
-func NewApp(cfg *config.Config) *App {
+func NewApp(cfg *config.AgentConfig) *App {
 
 	// Инициализация коллекторов
 	collectors := []collectors.Collector{
 		collectors.NewSystemCollector(),
-		collectors.NewProcessCollector(),
+		collectors.NewProcessCollector(cfg.Processes),
 		collectors.NewNetworkCollector(),
 	}
 
 	// Docker коллектор добавляем, если он доступен
-	if dockerCollector, err := collectors.NewDockerCollector(); err == nil {
+	if dockerCollector, err := collectors.NewDockerCollector(cfg.Containers); err == nil {
 		collectors = append(collectors, dockerCollector)
 	}
 
@@ -57,7 +59,7 @@ func (a *App) Run(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 
-		ticker := time.NewTicker(a.cfg.CollectInterval)
+		ticker := time.NewTicker(a.cfg.PollInterval)
 		defer ticker.Stop()
 
 		for {

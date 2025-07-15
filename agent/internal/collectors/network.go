@@ -76,27 +76,16 @@ func (c *NetworkCollector) Collect(metrics *models.AgentMetrics) error {
 
 		port := conn.Laddr.Port
 		protocol := "TCP"
-		if conn.Type == "udp" {
+		if conn.Type == 2 {
 			protocol = "UDP"
 		}
 
 		key := fmt.Sprintf("%s-%d", protocol, port)
 		if _, exists := portMap[key]; !exists {
-			// Получаем имя процесса, если возможно
-			processName := ""
-			if conn.Pid > 0 {
-				if p, err := process.NewProcess(conn.Pid); err == nil {
-					if name, err := p.Name(); err == nil {
-						processName = name
-					}
-				}
-			}
-
 			portMap[key] = models.PortInfo{
-				Port:     port,
+				Port:     uint16(port),
 				Protocol: protocol,
 				State:    conn.Status,
-				Process:  processName,
 			}
 		}
 	}

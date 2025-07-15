@@ -2,6 +2,7 @@ package main
 
 import (
 	"agent/internal/app"
+	"agent/internal/config"
 	"context"
 	"log"
 	"os"
