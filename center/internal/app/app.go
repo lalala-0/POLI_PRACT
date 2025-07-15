@@ -6,10 +6,8 @@ import (
 	"center/internal/database/mongodb/repositories"
 	pgdb "center/internal/database/postgres"
 	pg_repo "center/internal/database/postgres/repositories"
-	"center/internal/models"
 	"center/internal/services"
 	api "center/internal/transport"
-	"go.mongodb.org/mongo-driver/bson"
 	"sync"
 
 	"context"
@@ -19,8 +17,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // App представляет основное приложение центра мониторинга
@@ -54,7 +50,7 @@ func NewApp(cfg *config.AppConfig) *App {
 	}
 
 	// Инициализация подключения к MongoDB
-	mongoDB, err := mgdb.InitMongo(cfg.MongoDB)
+	mongoDB, err := mgdb.InitMongo(cfg.MongoDB, cfg.Metrics.MetricsTTLDays)
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
@@ -64,11 +60,6 @@ func NewApp(cfg *config.AppConfig) *App {
 			log.Printf("MongoDB disconnect error: %v", err)
 		}
 	}()
-
-	// Создание TTL индексов для автоматического удаления старых данных
-	if err := mgdb.createTTLIndexes(mongoDB.Database, cfg.Metrics.MetricsTTLDays); err != nil {
-		log.Printf("Failed to create TTL indexes: %v", err)
-	}
 
 	// Инициализация репозиториев
 	hostRepo := pg_repo.NewPostgresHostRepository(pgdb.DB)

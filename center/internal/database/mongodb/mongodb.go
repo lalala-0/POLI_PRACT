@@ -26,7 +26,7 @@ type MongoDatabase struct {
 	Database *mongo.Database
 }
 
-func InitMongo(cfg config.MongoDBConfig) (*MongoDatabase, error) {
+func InitMongo(cfg config.MongoDBConfig, tllDays int) (*MongoDatabase, error) {
 	// Создаем контекст с таймаутом подключения
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.ConnectTimeout)
 	defer cancel()
@@ -62,6 +62,12 @@ func InitMongo(cfg config.MongoDBConfig) (*MongoDatabase, error) {
 	log.Printf("Connection pool: min=%d, max=%d", cfg.MinPoolSize, cfg.MaxPoolSize)
 
 	var db = cl.Database(cfg.DBName)
+
+	// Создание TTL индексов для автоматического удаления старых данных
+	if err := createTTLIndexes(db, tllDays); err != nil {
+		log.Printf("Failed to create TTL indexes: %v", err)
+	}
+
 	return &MongoDatabase{
 		Client:   cl,
 		Database: db,
