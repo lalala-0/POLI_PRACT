@@ -202,6 +202,15 @@ func (r *PostgresHostRepository) GetAll(ctx context.Context) ([]models.Host, err
 	return hosts, nil
 }
 
+// GetHostCount возвращает количество хостов
+func (r *PostgresHostRepository) GetHostCount() (int, error) {
+	var count int
+	if err := r.db.QueryRow("SELECT COUNT(*) FROM hosts").Scan(&count); err != nil {
+		return 1, err
+	}
+	return count, nil
+}
+
 // GetMaster возвращает текущий мастер-хост
 func (r *PostgresHostRepository) GetMaster(ctx context.Context) (*models.Host, error) {
 	query := `SELECT id, hostname, ip_address, agent_port, priority, is_master, status, last_check, 

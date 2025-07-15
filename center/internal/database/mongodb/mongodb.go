@@ -4,7 +4,9 @@ import (
 	"center/internal/config"
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
 	"log"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -64,4 +66,33 @@ func InitMongo(cfg config.MongoDBConfig) (*MongoDatabase, error) {
 		Client:   cl,
 		Database: db,
 	}, nil
+}
+
+// createTTLIndexes создает TTL индексы в MongoDB
+func createTTLIndexes(db *mongo.Database, ttlDays int) error {
+	collections := []string{
+		"system_metrics",
+		"process_metrics",
+		"container_metrics",
+		"network_metrics",
+	}
+
+	ttlSeconds := int32(ttlDays * 24 * 60 * 60)
+
+	for _, collection := range collections {
+		model := mongo.IndexModel{
+			Keys:    bson.M{"timestamp": 1},
+			Options: options.Index().SetExpireAfterSeconds(ttlSeconds),
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		_, err := db.Collection(collection).Indexes().CreateOne(ctx, model)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

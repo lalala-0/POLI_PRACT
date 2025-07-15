@@ -66,7 +66,7 @@ func NewApp(cfg *config.AppConfig) *App {
 	}()
 
 	// Создание TTL индексов для автоматического удаления старых данных
-	if err := createTTLIndexes(mongoDB.Database, cfg.Metrics.MetricsTTLDays); err != nil {
+	if err := mgdb.createTTLIndexes(mongoDB.Database, cfg.Metrics.MetricsTTLDays); err != nil {
 		log.Printf("Failed to create TTL indexes: %v", err)
 	}
 
@@ -145,7 +145,7 @@ func NewApp(cfg *config.AppConfig) *App {
 func (a *App) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 	// Загрузка начальных данных
-	if err := a.loadInitialData(); err != nil {
+	if err := a.hostService.LoadInitialData(ctx, a.cfg); err != nil {
 		log.Printf("Initial data loading error: %v", err)
 	}
 
@@ -192,44 +192,6 @@ func (a *App) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}()
 }
 
-// func runMigrations(db *gorm.DB) error {
-// 	return pgdb.AutoMigrate(
-// 		&models.Host{},
-// 		&models.Process{},
-// 		&models.Container{},
-// 		&models.AlertRule{},
-// 	)
-// }
-
-// createTTLIndexes создает TTL индексы в MongoDB
-func createTTLIndexes(db *mongo.Database, ttlDays int) error {
-	collections := []string{
-		"system_metrics",
-		"process_metrics",
-		"container_metrics",
-		"network_metrics",
-	}
-
-	ttlSeconds := int32(ttlDays * 24 * 60 * 60)
-
-	for _, collection := range collections {
-		model := mongo.IndexModel{
-			Keys:    bson.M{"timestamp": 1},
-			Options: options.Index().SetExpireAfterSeconds(ttlSeconds),
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		_, err := pgdb.Collection(collection).Indexes().CreateOne(ctx, model)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // Close освобождает ресурсы приложения
 func (a *App) Close() {
 	// Создаем контекст с таймаутом для graceful shutdown сервера
@@ -269,62 +231,4 @@ func (a *App) sendInitialConfigToAgents(ctx context.Context) {
 			log.Printf("Configuration sent to host %s", host.Hostname)
 		}
 	}
-}
-
-func (a *App) loadInitialData() error {
-	// Проверка, есть ли уже данные
-	var count int
-	if err := a.pgDB.QueryRow("SELECT COUNT(*) FROM hosts").Scan(&count); err != nil {
-		return err
-	}
-
-	if count > 0 {
-		return nil // Данные уже есть, пропускаем
-	}
-
-	ctx := context.Background()
-
-	// Загрузка данных из конфига
-	for _, hostCfg := range a.cfg.InitialData.Hosts {
-		// Создание хоста через сервис
-		hostID, err := a.hostService.CreateHost(ctx, models.HostInput{
-			Hostname:  hostCfg.Hostname,
-			IPAddress: hostCfg.IPAddress,
-			AgentPort: hostCfg.AgentPort,
-			Priority:  hostCfg.Priority,
-		})
-		if err != nil {
-			log.Printf("Failed to create host %s: %v", hostCfg.Hostname, err)
-			continue
-		}
-
-		// Добавление процессов
-		for _, process := range hostCfg.Processes {
-			if _, err := a.hostService.AddProcess(ctx, hostID, process); err != nil {
-				log.Printf("Failed to add process %s to host %s: %v", process, hostCfg.Hostname, err)
-			}
-		}
-
-		// Добавление контейнеров
-		for _, container := range hostCfg.Containers {
-			if _, err := a.hostService.AddContainer(ctx, hostID, container); err != nil {
-				log.Printf("Failed to add container %s to host %s: %v", container, hostCfg.Hostname, err)
-			}
-		}
-
-		// Добавление правил оповещений
-		for _, alert := range hostCfg.Alerts {
-			if _, err := a.hostService.CreateAlertRule(ctx, hostID, models.AlertInput{
-				MetricName:     alert.MetricName,
-				ThresholdValue: alert.ThresholdValue,
-				Condition:      alert.Condition,
-				Enabled:        alert.Enabled,
-			}); err != nil {
-				log.Printf("Failed to add alert for %s to host %s: %v", alert.MetricName, hostCfg.Hostname, err)
-			}
-		}
-	}
-
-	log.Println("Initial data loaded from config using services")
-	return nil
 }

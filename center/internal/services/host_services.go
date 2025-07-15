@@ -1,6 +1,7 @@
 package services
 
 import (
+	"center/internal/config"
 	"center/internal/database/mongodb/repositories"
 	pg_repo "center/internal/database/postgres/repositories"
 	"center/internal/models"
@@ -192,4 +193,59 @@ func (s *HostService) SaveContainerMetrics(ctx context.Context, metrics *models.
 
 func (s *HostService) SaveNetworkMetrics(ctx context.Context, metrics *models.NetworkMetrics) error {
 	return s.MetricRepo.SaveNetworkMetrics(ctx, metrics)
+}
+
+func (s *HostService) LoadInitialData(ctx context.Context, cfg *config.AppConfig) error {
+	//Проверка, есть ли уже данные
+	var count int
+	if count, err := s.HostRepo.GetHostCount(); err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil // Данные уже есть, пропускаем
+	}
+
+	// Загрузка данных из конфига
+	for _, hostCfg := range cfg.InitialData.Hosts {
+		// Создание хоста через сервис
+		hostID, err := s.CreateHost(ctx, models.HostInput{
+			Hostname:  hostCfg.Hostname,
+			IPAddress: hostCfg.IPAddress,
+			AgentPort: hostCfg.AgentPort,
+			Priority:  hostCfg.Priority,
+		})
+		if err != nil {
+			log.Printf("Failed to create host %s: %v", hostCfg.Hostname, err)
+			continue
+		}
+
+		// Добавление процессов
+		for _, process := range hostCfg.Processes {
+			if _, err := s.AddProcess(ctx, hostID, process); err != nil {
+				log.Printf("Failed to add process %s to host %s: %v", process, hostCfg.Hostname, err)
+			}
+		}
+
+		// Добавление контейнеров
+		for _, container := range hostCfg.Containers {
+			if _, err := s.AddContainer(ctx, hostID, container); err != nil {
+				log.Printf("Failed to add container %s to host %s: %v", container, hostCfg.Hostname, err)
+			}
+		}
+
+		// Добавление правил оповещений
+		for _, alert := range hostCfg.Alerts {
+			if _, err := s.CreateAlertRule(ctx, hostID, models.AlertInput{
+				MetricName:     alert.MetricName,
+				ThresholdValue: alert.ThresholdValue,
+				Condition:      alert.Condition,
+				Enabled:        alert.Enabled,
+			}); err != nil {
+				log.Printf("Failed to add alert for %s to host %s: %v", alert.MetricName, hostCfg.Hostname, err)
+			}
+		}
+	}
+
+	log.Println("Initial data loaded from config using services")
+	return nil
 }

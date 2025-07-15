@@ -14,6 +14,7 @@ import (
 type HostRepository interface {
 	NewHostRepository(db *sql.DB) *HostRepository
 	GetAll(ctx context.Context) ([]models.Host, error)
+	GetHostCount() (int, error)
 	GetByID(ctx context.Context, id int) (*models.Host, error)
 	Create(ctx context.Context, host *models.Host) (int, error)
 	Update(ctx context.Context, host *models.Host) error
