@@ -1,7 +1,7 @@
 package app
 
 import (
-	"agent/internal/collectors"
+	coll "agent/internal/collectors"
 	"agent/internal/config"
 	"agent/internal/models"
 	service "agent/internal/services"
@@ -14,21 +14,21 @@ import (
 
 type App struct {
 	cfg            *config.AgentConfig
-	collectors     []collectors.Collector
+	collectors     []coll.Collector
 	metricsService *service.MetricsService
 }
 
 func NewApp(cfg *config.AgentConfig) *App {
 
 	// Инициализация коллекторов
-	collectors := []collectors.Collector{
-		collectors.NewSystemCollector(),
-		collectors.NewProcessCollector(cfg.Processes),
-		collectors.NewNetworkCollector(),
+	collectors := []coll.Collector{
+		coll.NewSystemCollector(),
+		coll.NewProcessCollector(cfg.Processes),
+		coll.NewNetworkCollector(),
 	}
 
 	// Docker коллектор добавляем, если он доступен
-	if dockerCollector, err := collectors.NewDockerCollector(cfg.Containers); err == nil {
+	if dockerCollector, err := coll.NewDockerCollector(cfg.Containers); err == nil {
 		collectors = append(collectors, dockerCollector)
 	}
 

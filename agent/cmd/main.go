@@ -13,7 +13,8 @@ import (
 
 func main() {
 	// Загрузка конфигурации из файла
-	cfg, err := config.LoadAgentConfig("configs/agent.yaml")
+
+	cfg, err := config.LoadAgentConfig("D:\\POLI_PRACT\\agent\\config\\config.yml")
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
