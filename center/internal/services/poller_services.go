@@ -1,0 +1,237 @@
+package services
+
+import (
+	"POLI_PRACT/center/internal/models"
+	"POLI_PRACT/center/internal/repositories"
+	"POLI_PRACT/center/internal/repositories/mongobd"
+	"POLI_PRACT/center/internal/repositories/postgres"
+	"net/http"
+	"time"
+	"encoding/json"
+	"context"
+	"errors"
+	"log"
+)
+
+// PollerService отвечает за периодический опрос агентов
+type PollerService struct {
+	hostService *HostService
+	interval    time.Duration
+	httpClient  *http.Client
+	logger      *log.Logger
+}
+
+func NewPollerService(
+	hostService *HostService,
+	interval time.Duration,
+	logger *log.Logger,
+) *PollerService {
+	return &PollerService{
+		hostService: hostService,
+		interval:    interval,
+		httpClient: &http.Client{
+			Timeout: 10 * time.Second,
+		},
+		logger: logger,
+	}
+}
+
+// Start запускает процесс опроса хостов
+func (s *PollerService) Start(ctx context.Context) {
+	s.logger.Println("Starting poller service...")
+	ticker := time.NewTicker(s.interval)
+	defer ticker.Stop()
+
+	// Первый опрос сразу при запуске
+	s.pollHosts(ctx)
+
+	for {
+		select {
+		case <-ticker.C:
+			s.pollHosts(ctx)
+		case <-ctx.Done():
+			s.logger.Println("Stopping poller service...")
+			return
+		}
+	}
+}
+
+// pollHosts опрашивает все активные хосты
+func (s *PollerService) pollHosts(ctx context.Context) {
+	s.logger.Println("Polling hosts...")
+	hosts, err := s.hostService.GetAllHosts(ctx)
+	if err != nil {
+		s.logger.Printf("Error getting hosts: %v", err)
+		return
+	}
+
+	for _, host := range hosts {
+		go s.pollHost(ctx, host)
+	}
+}
+
+// pollHost опрашивает конкретный хост
+func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
+	// Формируем URL для запроса метрик
+	url := fmt.Sprintf("http://%s:%d/api/metrics", host.IPAddress, host.AgentPort)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		s.logger.Printf("[%s] Error creating request: %v", host.Hostname, err)
+		s.updateHostStatus(ctx, host.ID, "error")
+		return
+	}
+
+	start := time.Now()
+	resp, err := s.httpClient.Do(req)
+	duration := time.Since(start)
+
+	if err != nil {
+		s.logger.Printf("[%s] Polling error: %v", host.Hostname, err)
+		s.updateHostStatus(ctx, host.ID, "down")
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		s.logger.Printf("[%s] Unexpected status: %d", host.Hostname, resp.StatusCode)
+		s.updateHostStatus(ctx, host.ID, "unstable")
+		return
+	}
+
+	var metrics models.AgentMetrics
+	if err := json.NewDecoder(resp.Body).Decode(&metrics); err != nil {
+		s.logger.Printf("[%s] Error decoding metrics: %v", host.Hostname, err)
+		return
+	}
+
+	// Обновляем статус хоста
+	s.updateHostStatus(ctx, host.ID, "active")
+
+	// Сохраняем метрики
+	s.hostService.ProcessHostMetrics(ctx, host.ID, metrics)
+
+	s.logger.Printf("[%s] Metrics collected in %v", host.Hostname, duration)
+}
+
+// updateHostStatus обновляет статус хоста в БД
+func (s *PollerService) updateHostStatus(ctx context.Context, hostID int, status string) {
+	if err := s.hostService.UpdateHostStatus(ctx, hostID, status); err != nil {
+		s.logger.Printf("Error updating host status: %v", err)
+	}
+}
+
+// ProcessHostMetrics обрабатывает и сохраняет метрики хоста
+func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metrics models.AgentMetrics) {
+	// Сохраняем системные метрики
+	if metrics.System != (models.SystemMetrics{}) {
+		systemMetrics := models.SystemMetrics{
+			HostID:    hostID,
+			Timestamp: metrics.Timestamp,
+			CPU:       metrics.System.CPU,
+			RAM:       metrics.System.RAM,
+			Disk:      metrics.System.Disk,
+		}
+		if err := s.SaveSystemMetrics(ctx, &systemMetrics); err != nil {
+			s.logger.Printf("Error saving system metrics: %v", err)
+		}
+	}
+
+	// Сохраняем метрики процессов
+	if len(metrics.Processes) > 0 {
+		processMetrics := models.ProcessMetrics{
+			HostID:    hostID,
+			Timestamp: metrics.Timestamp,
+			Processes: metrics.Processes,
+		}
+		if err := s.SaveProcessMetrics(ctx, &processMetrics); err != nil {
+			s.logger.Printf("Error saving process metrics: %v", err)
+		}
+	}
+
+	// Сохраняем сетевые метрики
+	if len(metrics.Ports) > 0 {
+		networkMetrics := models.NetworkMetrics{
+			HostID:    hostID,
+			Timestamp: metrics.Timestamp,
+			Ports:     metrics.Ports,
+		}
+		if err := s.SaveNetworkMetrics(ctx, &networkMetrics); err != nil {
+			s.logger.Printf("Error saving network metrics: %v", err)
+		}
+	}
+
+	// Сохраняем метрики контейнеров
+	if len(metrics.Containers) > 0 {
+		containerMetrics := models.ContainerMetrics{
+			HostID:     hostID,
+			Timestamp:  metrics.Timestamp,
+			Containers: metrics.Containers,
+		}
+		if err := s.SaveContainerMetrics(ctx, &containerMetrics); err != nil {
+			s.logger.Printf("Error saving container metrics: %v", err)
+		}
+	}
+}
+
+// SendConfigurationToAgent отправляет конфигурацию на агент
+func (s *HostService) SendConfigurationToAgent(ctx context.Context, host models.Host) error {
+	// Отправка конфигурации процессов
+	processes, err := s.processRepo.GetByHostID(ctx, host.ID)
+	if err != nil {
+		return err
+	}
+
+	processNames := make([]string, 0, len(processes))
+	for _, p := range processes {
+		processNames = append(processNames, p.ProcessName)
+	}
+
+	if err := s.sendToAgent(ctx, host, "/api/config/processes", map[string]interface{}{
+		"processes": processNames,
+	}); err != nil {
+		return err
+	}
+
+	// Отправка конфигурации контейнеров
+	containers, err := s.containerRepo.GetByHostID(ctx, host.ID)
+	if err != nil {
+		return err
+	}
+
+	containerNames := make([]string, 0, len(containers))
+	for _, c := range containers {
+		containerNames = append(containerNames, c.ContainerName)
+	}
+
+	return s.sendToAgent(ctx, host, "/api/config/containers", map[string]interface{}{
+		"containers": containerNames,
+	})
+}
+
+// sendToAgent отправляет данные на агент
+func (s *HostService) sendToAgent(ctx context.Context, host models.Host, endpoint string, data interface{}) error {
+	url := fmt.Sprintf("http://%s:%d%s", host.IPAddress, host.AgentPort, endpoint)
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("agent returned status %d", resp.StatusCode)
+	}
+
+	return nil
+}

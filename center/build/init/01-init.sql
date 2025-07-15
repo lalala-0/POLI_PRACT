@@ -3,10 +3,10 @@ CREATE TABLE hosts (
     id SERIAL PRIMARY KEY,
     hostname VARCHAR(255) NOT NULL,
     ip_address VARCHAR(50) NOT NULL,
+    agent_port INTEGER DEFAULT 8081,
     priority INTEGER DEFAULT 0,
     is_master BOOLEAN DEFAULT FALSE,
     status VARCHAR(50) DEFAULT 'unknown',
-    last_check TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );

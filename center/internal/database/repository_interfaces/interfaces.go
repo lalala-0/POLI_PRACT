@@ -1,13 +1,14 @@
 package postgres
 
 import (
-	"POLI_PRACT/models"
+	"center/internal/models"
 	"context"
 	"time"
 )
 
 // HostRepository интерфейс для работы с хостами в БД
 type HostRepository interface {
+	NewHostRepository(db *sql.DB) HostRepository
 	GetAll(ctx context.Context) ([]models.Host, error)
 	GetByID(ctx context.Context, id int) (*models.Host, error)
 	Create(ctx context.Context, host *models.Host) (int, error)
@@ -16,6 +17,7 @@ type HostRepository interface {
 	UpdateStatus(ctx context.Context, id int, status string) error
 	GetMaster(ctx context.Context) (*models.Host, error)
 	SetMaster(ctx context.Context, id int) error
+	//Ping(ctx context.Context) error
 }
 
 // ProcessRepository интерфейс для работы с процессами в БД
@@ -61,4 +63,6 @@ type MetricRepository interface {
 	GetContainerMetricsInRange(ctx context.Context, hostID int, from, to time.Time) ([]models.ContainerMetrics, error)
 	GetNetworkMetricsInRange(ctx context.Context, hostID int, from, to time.Time) ([]models.NetworkMetrics, error)
 	SetupTTLIndex(ctx context.Context, collectionName string, ttlSeconds int32) error
+	CleanupOldMetrics(ctx context.Context, collectionName string, threshold time.Time) error
+	Ping(ctx context.Context) error
 }

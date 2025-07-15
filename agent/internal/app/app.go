@@ -16,7 +16,7 @@ type App struct {
 	metricsService *service.MetricsService
 }
 
-func NewApp() *App {
+func NewApp(cfg *config.Config) *App {
 
 	// Инициализация коллекторов
 	collectors := []collectors.Collector{
@@ -70,7 +70,7 @@ func (a *App) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				for _, c := range a.collectors {
 					if err := c.Collect(&metrics); err != nil {
-						// Обработка ошибок сбора метрик
+						log.Printf("Collection error: %v", err)
 					}
 				}
 
@@ -82,7 +82,7 @@ func (a *App) Run(ctx context.Context, wg *sync.WaitGroup) {
 				case metricsCh <- metrics:
 					// Успешно отправлено
 				default:
-					// Канал переполнен, пропускаем
+					log.Println("Metrics channel full, skipping")
 				}
 			}
 		}

@@ -9,10 +9,11 @@ type Host struct {
 	ID        int       `json:"id" db:"id"`
 	Hostname  string    `json:"hostname" binding:"required" db:"hostname"`
 	IPAddress string    `json:"ip_address" binding:"required" db:"ip_address"`
+	AgentPort int       `json:"agent_port" db:"agent_port"` 
 	Priority  int       `json:"priority" db:"priority"`
 	IsMaster  bool      `json:"is_master" db:"is_master"`
 	Status    string    `json:"status" db:"status"`
-	LastCheck time.Time `json:"last_check" db:"last_check"`
+	//LastCheck time.Time `json:"last_check" db:"last_check"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }

@@ -1,9 +1,12 @@
 package db
+//package postgres
 
 import (
 	"database/sql"
 	"fmt"
 	"log"
+    "errors"
+	"strings"
 
 	// Импортируем все возможные драйверы
     _ "github.com/go-sql-driver/mysql"
@@ -15,29 +18,32 @@ import (
 var DB *sql.DB
 
 type PostgresConfig struct {
-    Driver   string
-    Host     string
-    Port     string
-    User     string
-    Password string
-    DBName   string
-    SSLMode  string
+    Driver          string
+    Host            string
+    Port            string
+    User            string
+    Password        string
+    DBName          string
+    SSLMode         string
+    MaxOpenConns 	uint64 		 
+	MaxIdleConns 	uint64 		  
+	ConnMaxLifetime time.Duration 
 }
 
-func InitPostgres(cfg PostgresConfig) error {
+func InitPostgres(cfg PostgresConfig) (*sql.DB, error) {
 	connStr := generateConnectionString(cnf)
 	var err error
 	DB, err = sql.Open(cfg.driver, connStr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err = DB.Ping(); err != nil {
-		return err
+		return nil, err
 	}
-
+    configureConnectionPool(cnf)
 	log.Println("Connected to PostgreSQL database")
-	return nil
+	return DB, nil
 }
 
 
@@ -48,7 +54,7 @@ func generateConnectionString(cfg PostgresConfig) string {
             cfg.SSLMode = "disable"
         }
         return fmt.Sprintf(
-            "host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+            "host=%s port=%s user=%s password=%s DBname=%s sslmode=%s",
             cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode)
     
 	 case "pgx":
@@ -72,13 +78,222 @@ func generateConnectionString(cfg PostgresConfig) string {
     }
 }
 
-func configureConnectionPool() {
+
+func configureConnectionPool(cfg PostgresConfig) {
 	//максимальное количество одновременно открытых соединений с БД
-    DB.SetMaxOpenConns(25)
+    DB.SetMaxOpenConns(cnf.MaxOpenConns)
 	//количество неактивных соединений, которые сохраняются в пуле
-    DB.SetMaxIdleConns(5)
+    DB.SetMaxIdleConns(cnf.MaxIdleConns)
 	//максимальное время жизни соединения
-    DB.SetConnMaxLifetime(5 * time.Minute)
+    DB.SetConnMaxLifetime(cnf.ConnMaxLifetime)
 }
 
 
+// Проверяет структуру БД
+func ensureDBStructure() error {
+	// Проверка существования таблиц
+	requiredTables := []string{
+		"hosts",
+		"host_processes",
+		"host_containers",
+		"alert_rules",
+	}
+
+	for _, table := range requiredTables {
+		exists, err := tableExists(table)
+		if err != nil {
+			return fmt.Errorf("error checking table %s: %w", table, err)
+		}
+		if !exists {
+			return fmt.Errorf("missing required table: %s", table)
+		}
+	}
+
+	//  Проверка структуры таблиц
+	if err := verifyTableStructure("hosts", []ColumnDefinition{
+		{Name: "id", Type: "integer", NotNull: true, PrimaryKey: true},
+		{Name: "hostname", Type: "character varying(255)", NotNull: true},
+		{Name: "ip_address", Type: "character varying(50)", NotNull: true},
+		{Name: "priority", Type: "integer", Default: "0"},
+		{Name: "is_master", Type: "boolean", Default: "false"},
+		{Name: "status", Type: "character varying(50)", Default: "'unknown'::character varying"},
+		{Name: "created_at", Type: "timestamp without time zone", Default: "now()"},
+		{Name: "updated_at", Type: "timestamp without time zone", Default: "now()"},
+	}); err != nil {
+		return err
+	}
+
+	if err := verifyTableStructure("host_processes", []ColumnDefinition{
+		{Name: "id", Type: "integer", NotNull: true, PrimaryKey: true},
+		{Name: "host_id", Type: "integer", NotNull: true},
+		{Name: "process_name", Type: "character varying(255)", NotNull: true},
+	}); err != nil {
+		return err
+	}
+
+	if err := verifyTableStructure("host_containers", []ColumnDefinition{
+		{Name: "id", Type: "integer", NotNull: true, PrimaryKey: true},
+		{Name: "host_id", Type: "integer", NotNull: true},
+		{Name: "container_name", Type: "character varying(255)", NotNull: true},
+	}); err != nil {
+		return err
+	}
+
+	if err := verifyTableStructure("alert_rules", []ColumnDefinition{
+		{Name: "id", Type: "integer", NotNull: true, PrimaryKey: true},
+		{Name: "host_id", Type: "integer", NotNull: true},
+		{Name: "metric_name", Type: "character varying(100)", NotNull: true},
+		{Name: "threshold_value", Type: "double precision", NotNull: true},
+		{Name: "condition", Type: "character varying(10)", NotNull: true},
+		{Name: "enabled", Type: "boolean", Default: "true"},
+	}); err != nil {
+		return err
+	}
+
+	// 3. Проверка внешних ключей
+	foreignKeys := []struct {
+		Table       string
+		Column      string
+		RefTable    string
+		RefColumn   string
+		OnDelete    string
+	}{
+		{"host_processes", "host_id", "hosts", "id", "CASCADE"},
+		{"host_containers", "host_id", "hosts", "id", "CASCADE"},
+		{"alert_rules", "host_id", "hosts", "id", "CASCADE"},
+	}
+
+	for _, fk := range foreignKeys {
+		exists, err := foreignKeyExists(fk.Table, fk.Column, fk.RefTable, fk.RefColumn, fk.OnDelete)
+		if err != nil {
+			return fmt.Errorf("error checking foreign key: %w", err)
+		}
+		if !exists {
+			return fmt.Errorf("missing foreign key: %s.%s -> %s.%s (%s ON DELETE)",
+				fk.Table, fk.Column, fk.RefTable, fk.RefColumn, fk.OnDelete)
+		}
+	}
+
+	log.Println("Database structure verification successful")
+	return nil
+}
+
+// Описывает ожидаемую структуру столбца
+type ColumnDefinition struct {
+	Name       string
+	Type       string
+	NotNull    bool
+	PrimaryKey bool
+	Default    string
+}
+
+// Проверяет существование таблицы
+func tableExists(tableName string) (bool, error) {
+	query := `
+		SELECT EXISTS (
+			SELECT 1 
+			FROM information_schema.tables 
+			WHERE table_schema = 'public' 
+			AND table_name = $1
+		)`
+
+	var exists bool
+	err := DB.QueryRow(query, tableName).Scan(&exists)
+	return exists, err
+}
+
+// Проверяет структуру таблицы
+func verifyTableStructure(tableName string, columns []ColumnDefinition) error {
+	for _, expected := range columns {
+		// Получаем информацию о столбце
+		actual, err := getColumnInfo(tableName, expected.Name)
+		if err != nil {
+			return fmt.Errorf("error getting column info for %s.%s: %w", tableName, expected.Name, err)
+		}
+
+		// Проверяем тип данных
+		if !strings.EqualFold(actual.DataType, expected.Type) {
+			return fmt.Errorf("type mismatch for %s.%s: expected %s, got %s",
+				tableName, expected.Name, expected.Type, actual.DataType)
+		}
+
+		// Проверяем NOT NULL
+		if expected.NotNull && actual.IsNullable == "YES" {
+			return fmt.Errorf("column %s.%s should be NOT NULL", tableName, expected.Name)
+		}
+
+		// Проверяем значение по умолчанию (если указано)
+		if expected.Default != "" {
+			// Нормализуем значения по умолчанию
+			normalizedExpected := strings.ToLower(strings.TrimSpace(expected.Default))
+			normalizedActual := strings.ToLower(strings.TrimSpace(actual.ColumnDefault))
+
+			if normalizedActual != normalizedExpected {
+				return fmt.Errorf("default value mismatch for %s.%s: expected '%s', got '%s'",
+					tableName, expected.Name, normalizedExpected, normalizedActual)
+			}
+		}
+	}
+	return nil
+}
+
+// ColumnInfo хранит информацию о столбце
+type ColumnInfo struct {
+	ColumnName    string
+	DataType      string
+	IsNullable    string
+	ColumnDefault string
+}
+
+// getColumnInfo возвращает информацию о столбце
+func getColumnInfo(tableName, columnName string) (ColumnInfo, error) {
+	query := `
+		SELECT 
+			column_name, 
+			data_type,
+			is_nullable,
+			column_default
+		FROM information_schema.columns 
+		WHERE table_name = $1 AND column_name = $2`
+
+	var info ColumnInfo
+	err := DB.QueryRow(query, tableName, columnName).Scan(
+		&info.ColumnName,
+		&info.DataType,
+		&info.IsNullable,
+		&info.ColumnDefault,
+	)
+
+	if err == sql.ErrNoRows {
+		return ColumnInfo{}, fmt.Errorf("column %s not found in table %s", columnName, tableName)
+	}
+
+	return info, err
+}
+
+// foreignKeyExists проверяет существование внешнего ключа
+func foreignKeyExists(table, column, refTable, refColumn, onDelete string) (bool, error) {
+	query := `
+		SELECT EXISTS(
+			SELECT 1 
+			FROM information_schema.table_constraints tc
+			JOIN information_schema.key_column_usage kcu
+				ON tc.constraint_name = kcu.constraint_name
+			JOIN information_schema.referential_constraints rc
+				ON tc.constraint_name = rc.constraint_name
+			WHERE 
+				tc.table_name = $1 AND 
+				kcu.column_name = $2 AND
+				tc.constraint_type = 'FOREIGN KEY' AND
+				rc.unique_constraint_name IN (
+					SELECT constraint_name
+					FROM information_schema.table_constraints
+					WHERE table_name = $3 AND constraint_type = 'PRIMARY KEY'
+				) AND
+				rc.delete_rule = $4
+		)`
+
+	var exists bool
+	err := DB.QueryRow(query, table, column, refTable, onDelete).Scan(&exists)
+	return exists, err
+}

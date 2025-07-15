@@ -42,8 +42,9 @@ func (c *DockerCollector) Collect(metrics *models.AgentMetrics) error {
 		// Если указан список контейнеров и текущего в нем нет - пропускаем
 		if len(c.containers) > 0 {
 			found := false
+			cleanName := ""
 			for _, name := range container.Names {
-				cleanName := strings.TrimPrefix(name, "/")
+				cleanName = strings.TrimPrefix(name, "/")
 				for _, targetName := range c.containers {
 					if targetName == cleanName {
 						found = true
@@ -72,7 +73,7 @@ func (c *DockerCollector) Collect(metrics *models.AgentMetrics) error {
 		}
 
 		// Рассчитываем проценты использования CPU и памяти
-		cpuPercent := calculateCPUPercent(statsJSON)
+		cpuPercent := calculateCPUPercent(&statsJSON)
 		memoryUsage := statsJSON.MemoryStats.Usage
 		memoryLimit := statsJSON.MemoryStats.Limit
 
@@ -81,11 +82,18 @@ func (c *DockerCollector) Collect(metrics *models.AgentMetrics) error {
 			memPercent = float64(memoryUsage) / float64(memoryLimit) * 100.0
 		}
 
+		// Получаем статус контейнера
+		status := "unknown"
+		if container.State != "" {
+			status = container.State
+		}
+
 		containerInfos = append(containerInfos, models.ContainerInfo{
 			ID:         container.ID[:12],
-			Name:       strings.TrimPrefix(container.Names[0], "/"),
+			//Name:       strings.TrimPrefix(container.Names[0], "/"),
+			Name:		cleanName,
 			Image:      container.Image,
-			Status:     container.Status,
+			Status:     status,
 			CPUPercent: cpuPercent,
 			MemPercent: memPercent,
 		})
@@ -94,7 +102,7 @@ func (c *DockerCollector) Collect(metrics *models.AgentMetrics) error {
 	metrics.Containers = containerInfos
 	return nil
 }
-
+///////////////////
 func calculateCPUPercent(stats types.StatsJSON) float64 {
 	cpuDelta := float64(stats.CPUStats.CPUUsage.TotalUsage) - float64(stats.PreCPUStats.CPUUsage.TotalUsage)
 	systemDelta := float64(stats.CPUStats.SystemUsage) - float64(stats.PreCPUStats.SystemUsage)

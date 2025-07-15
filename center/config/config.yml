@@ -11,10 +11,17 @@ postgres:
   dbname: "monitoring"
   sslmode: "disable"
   driver: "pq"
+  maxOpenConns: 25
+  maxIdleConns: 5
+  connMaxLifetime: 5m
 
 mongodb:
   uri: "mongodb://mongo:27017"
   dbname: "metrics"
+  connectTimeout: 5s
+  maxPoolSize: 20
+  minPoolSize: 5
+  serverSelectionTimeout: 10s
 
 metrics:
   poll_interval: 60s
