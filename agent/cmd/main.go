@@ -4,6 +4,7 @@ import (
 	"agent/internal/app"
 	"agent/internal/config"
 	"context"
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -13,8 +14,9 @@ import (
 
 func main() {
 	// Загрузка конфигурации из файла
-
-	cfg, err := config.LoadAgentConfig("D:\\POLI_PRACT\\agent\\config\\config.yml")
+	configPath := flag.String("config", "./config/config.yml", "path to config file")
+	flag.Parse()
+	cfg, err := config.LoadAgentConfig(*configPath)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}

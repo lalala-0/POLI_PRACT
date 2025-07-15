@@ -94,3 +94,34 @@
 Проверка
 
 `curl http://localhost:8080/`
+
+
+# Как добавить в автозапуск через systemctl
+1. Компилируем бинарник.
+- переходим в папку с проектом
+- создаем экзешник: `go build ./cmd/main.go`
+
+2. Распределяем необходимые файлы по директориям
+- Создаем директорию `sudo mkdir -p /etc/agent`
+- Конфиг config.yaml добавляем в папку /etc/agent `sudo cp ./config/agent.yaml /etc/agent/`
+- Создаем директорию `sudo mkdir -p /bin/agent`
+- Бинарник main.exe добавляем в папку /bin/agent `sudo cp ./main.exe /bin/agent/`
+
+3. Создаём agent.service
+- копируем юнит-файл `sudo cp ./deployments/agent.service /etc/systemd/system/`
+
+4. Перезапускаем systemd
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable agent.service
+sudo systemctl start agent.service
+```
+
+5. Проверка
+```bash
+sudo systemctl status agent.service
+journalctl -u agent.service -f
+```
+
+
+
