@@ -3,10 +3,8 @@ package api
 import (
 	"center/internal/models"
 	"center/internal/services"
-	"context"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -62,7 +60,7 @@ func (h *ContainerHandler) CreateContainer(c *gin.Context) {
 // id - host
 // container_id - container
 func (h *ContainerHandler) DeleteContainer(c *gin.Context) {
-	hostID, err := strconv.Atoi(c.Param("id"))
+	_, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid host ID"})
 		return

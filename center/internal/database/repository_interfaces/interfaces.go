@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"center/internal/models"
+	"database/sql"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"context"
 	//"database/sql"
@@ -10,7 +12,7 @@ import (
 
 // HostRepository интерфейс для работы с хостами в БД
 type HostRepository interface {
-	//NewPostgresHostRepository(db *sql.DB) *PostgresHostRepository
+	NewHostRepository(db *sql.DB) *HostRepository
 	GetAll(ctx context.Context) ([]models.Host, error)
 	GetByID(ctx context.Context, id int) (*models.Host, error)
 	Create(ctx context.Context, host *models.Host) (int, error)
@@ -24,7 +26,7 @@ type HostRepository interface {
 
 // ProcessRepository интерфейс для работы с процессами в БД
 type ProcessRepository interface {
-	//NewPostgresProcessRepository(db *sql.DB) *PostgresProcessRepository
+	NewProcessRepository(db *sql.DB) *ProcessRepository
 	GetByHostID(ctx context.Context, hostID int) ([]models.Process, error)
 	GetByID(ctx context.Context, id int) (*models.Process, error)
 	Create(ctx context.Context, process *models.Process) (int, error)
@@ -35,6 +37,7 @@ type ProcessRepository interface {
 
 // ContainerRepository интерфейс для работы с контейнерами в БД
 type ContainerRepository interface {
+	NewContainerRepository(db *sql.DB) *ContainerRepository
 	GetByHostID(ctx context.Context, hostID int) ([]models.Container, error)
 	GetByID(ctx context.Context, id int) (*models.Container, error)
 	Create(ctx context.Context, container *models.Container) (int, error)
@@ -45,6 +48,7 @@ type ContainerRepository interface {
 
 // AlertRepository интерфейс для работы с правилами оповещений в БД
 type AlertRepository interface {
+	NewAlertRepository(db *sql.DB) *AlertRepository
 	GetByHostID(ctx context.Context, hostID int) ([]models.AlertRule, error)
 	GetByID(ctx context.Context, id int) (*models.AlertRule, error)
 	Create(ctx context.Context, alert *models.AlertRule) (int, error)
@@ -56,6 +60,7 @@ type AlertRepository interface {
 
 // MetricRepository интерфейс для работы с метриками в MongoDB
 type MetricRepository interface {
+	NewMetricRepository(db *mongo.Database) *MetricRepository
 	SaveSystemMetrics(ctx context.Context, metrics *models.SystemMetrics) error
 	SaveProcessMetrics(ctx context.Context, metrics *models.ProcessMetrics) error
 	SaveContainerMetrics(ctx context.Context, metrics *models.ContainerMetrics) error

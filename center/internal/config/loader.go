@@ -1,8 +1,9 @@
 package config
 
 import (
-    "os"
-    "gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v3"
+	"os"
+	"time"
 )
 
 type AppConfig struct {
@@ -15,16 +16,16 @@ type AppConfig struct {
 }
 
 func LoadConfig(path string) (*AppConfig, error) {
-    data, err := os.ReadFile(path)
-    if err != nil {
-        return nil, err
-    }
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
 
-    cfg := &AppConfig{}
-    if err := yaml.Unmarshal(data, cfg); err != nil {
-        return nil, err
-    }
-    // Установка значений по умолчанию для mongoDB
+	cfg := &AppConfig{}
+	if err := yaml.Unmarshal(data, cfg); err != nil {
+		return nil, err
+	}
+	// Установка значений по умолчанию для mongoDB
 	if cfg.MongoDB.ConnectTimeout <= 0 {
 		cfg.MongoDB.ConnectTimeout = 5 * time.Second
 	}
@@ -41,5 +42,5 @@ func LoadConfig(path string) (*AppConfig, error) {
 	if cfg.Server.WriteTimeout == 0 {
 		cfg.Server.WriteTimeout = 30 * time.Second
 	}
-    return cfg, nil
+	return cfg, nil
 }

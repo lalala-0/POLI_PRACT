@@ -3,7 +3,6 @@ package api
 import (
 	"center/internal/models"
 	"center/internal/services"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -59,7 +58,7 @@ func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 }
 
 func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
-	hostID, err := strconv.Atoi(c.Param("id"))
+	_, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid host ID"})
 		return

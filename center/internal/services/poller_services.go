@@ -116,9 +116,9 @@ func (s *PollerService) updateHostStatus(ctx context.Context, hostID int, status
 }
 
 // ProcessHostMetrics обрабатывает и сохраняет метрики хоста
-func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metrics models.AgentMetrics) {
+func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metrics models.Host) {
 	// Сохраняем системные метрики
-	if metrics.System != (models.SystemMetrics{}) {
+	if metrics. != (models.SystemMetrics{}) {
 		systemMetrics := models.SystemMetrics{
 			HostID:    hostID,
 			Timestamp: metrics.Timestamp,

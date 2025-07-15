@@ -35,7 +35,7 @@ var DB *sql.DB
 func InitPostgres(cfg config.PostgresConfig) error {
 	connStr := generateConnectionString(cfg)
 	var err error
-	DB, err = sql.Open(cfg.driver, connStr)
+	DB, err = sql.Open(cfg.Driver, connStr)
 	if err != nil {
 		return err
 	}
@@ -81,9 +81,9 @@ func generateConnectionString(cfg config.PostgresConfig) string {
 
 func configureConnectionPool(cfg config.PostgresConfig) {
 	//максимальное количество одновременно открытых соединений с БД
-	DB.SetMaxOpenConns(cfg.MaxOpenConns)
+	DB.SetMaxOpenConns(int(cfg.MaxOpenConns))
 	//количество неактивных соединений, которые сохраняются в пуле
-	DB.SetMaxIdleConns(cfg.MaxIdleConns)
+	DB.SetMaxIdleConns(int(cfg.MaxIdleConns))
 	//максимальное время жизни соединения
 	DB.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 }

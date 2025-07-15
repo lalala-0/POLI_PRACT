@@ -30,29 +30,30 @@ type HostInput struct {
 type SystemMetrics struct {
 	HostID    int           `json:"host_id" bson:"host_id"`
 	Timestamp time.Time     `json:"timestamp" bson:"timestamp"`
-	CPU       CPUMetrics    `json:"cpu" bson:"cpu"`
-	Memory    MemoryMetrics `json:"memory" bson:"memory"`
-	Disk      []DiskMetrics `json:"disk" bson:"disk"`
+	System    SystemDetails `json:"system" bson:"system"`
 }
 
-// CPUMetrics представляет метрики CPU
-type CPUMetrics struct {
-	UsagePercent float64   `json:"usage_percent" bson:"usage_percent"`
-	LoadAvg      []float64 `json:"load_avg" bson:"load_avg"`
+type SystemDetails struct {
+	CPU  CPUInfo  `json:"cpu" bson:"cpu"`
+	RAM  RAMInfo  `json:"ram" bson:"ram"`
+	Disk DiskInfo `json:"disk" bson:"disk"`
 }
 
-// MemoryMetrics представляет метрики памяти
-type MemoryMetrics struct {
-	TotalMB      float64 `json:"total_mb" bson:"total_mb"`
-	UsedMB       float64 `json:"used_mb" bson:"used_mb"`
+type CPUInfo struct {
 	UsagePercent float64 `json:"usage_percent" bson:"usage_percent"`
 }
 
-// DiskMetrics представляет метрики диска
-type DiskMetrics struct {
-	MountPoint   string  `json:"mount_point" bson:"mount_point"`
-	TotalGB      float64 `json:"total_gb" bson:"total_gb"`
-	UsedGB       float64 `json:"used_gb" bson:"used_gb"`
+type RAMInfo struct {
+	Total        uint64  `json:"total" bson:"total"`
+	Used         uint64  `json:"used" bson:"used"`
+	Free         uint64  `json:"free" bson:"free"`
+	UsagePercent float64 `json:"usage_percent" bson:"usage_percent"`
+}
+
+type DiskInfo struct {
+	Total        uint64  `json:"total" bson:"total"`
+	Used         uint64  `json:"used" bson:"used"`
+	Free         uint64  `json:"free" bson:"free"`
 	UsagePercent float64 `json:"usage_percent" bson:"usage_percent"`
 }
 

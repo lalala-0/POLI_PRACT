@@ -4,7 +4,7 @@ import (
 	"center/internal/config"
 	mgdb "center/internal/database/mongodb"
 	"center/internal/database/mongodb/repositories"
-	db "center/internal/database/postgres"
+	pgdb "center/internal/database/postgres"
 	pg_repo "center/internal/database/postgres/repositories"
 	"center/internal/models"
 	"center/internal/services"
@@ -42,21 +42,16 @@ func NewApp(cfg *config.AppConfig) *App {
 	//logger := log.New(os.Stdout, "[MONITORING] ", log.LstdFlags|log.Lshortfile)
 
 	// Инициализация подключения к PostgreSQL
-	err := db.InitPostgres(cfg.Postgres)
+	err := pgdb.InitPostgres(cfg.Postgres)
 	if err != nil {
 		log.Fatalf("Failed to connect to PostgreSQL: %v", err)
 	}
 
 	// Валидация структуры БД
-	err = db.EnsurePostgresStructure()
+	err = pgdb.EnsurePostgresStructure()
 	if err != nil {
 		log.Fatalf("Database structure verification failed: %v", err)
 	}
-
-	// // Автомиграции
-	// if err := runMigrations(pgDB); err != nil {
-	// 	log.Fatalf("Migrations failed: %v", err)
-	// }
 
 	// Инициализация подключения к MongoDB
 	mongoDB, err := mgdb.InitMongo(cfg.MongoDB)
@@ -71,24 +66,24 @@ func NewApp(cfg *config.AppConfig) *App {
 	}()
 
 	// Создание TTL индексов для автоматического удаления старых данных
-	if err := createTTLIndexes(mongoDB, cfg.Metrics.MetricsTTLDays); err != nil {
+	if err := createTTLIndexes(mongoDB.Database, cfg.Metrics.MetricsTTLDays); err != nil {
 		log.Printf("Failed to create TTL indexes: %v", err)
 	}
 
 	// Инициализация репозиториев
-	hostRepo := pg_repo.NewPostgresHostRepository(db.DB)
-	processRepo := pg_repo.NewPostgresProcessRepository(db.DB)
-	containerRepo := pg_repo.NewPostgresContainerRepository(db.DB)
-	alertRepo := pg_repo.NewPostgresAlertRepository(db.DB)
-	metricRepo := repositories.NewMongoMetricRepository(mongoDB)
+	hostRepo := pg_repo.NewPostgresHostRepository(pgdb.DB)
+	processRepo := pg_repo.NewPostgresProcessRepository(pgdb.DB)
+	containerRepo := pg_repo.NewPostgresContainerRepository(pgdb.DB)
+	alertRepo := pg_repo.NewPostgresAlertRepository(pgdb.DB)
+	metricRepo := repositories.NewMongoMetricRepository(mongoDB.Database)
 
 	// Инициализация сервисов
 	hostService := services.NewHostService(
-		hostRepo,
-		processRepo,
-		containerRepo,
-		alertRepo,
-		metricRepo,
+		*hostRepo,
+		*processRepo,
+		*containerRepo,
+		*alertRepo,
+		*metricRepo,
 	)
 
 	pollerService := services.NewPollerService(
@@ -97,8 +92,8 @@ func NewApp(cfg *config.AppConfig) *App {
 	)
 
 	maintenanceService := services.NewMaintenanceService(
-		metricRepo,
-		hostRepo,
+		*metricRepo,
+		*hostRepo,
 		cfg.Metrics,
 	)
 
@@ -135,12 +130,12 @@ func NewApp(cfg *config.AppConfig) *App {
 	return &App{
 		cfg: cfg,
 		//logger: 			logger,
-		pgDB:           db.DB,
+		pgDB:           pgdb.DB,
 		mongoDB:        mongoDB,
 		hostService:    hostService,
 		pollerService:  pollerService,
 		maintenanceSvc: maintenanceService,
-		server:   		server,
+		server:         server,
 		handler:        handler,
 		router:         router,
 	}
@@ -174,7 +169,7 @@ func (a *App) Run(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		a.maintenanceSvc.StartCleanupRoutine()
+		a.maintenanceSvc.StartCleanupRoutine(ctx)
 	}()
 
 	wg.Add(1)
@@ -198,7 +193,7 @@ func (a *App) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // func runMigrations(db *gorm.DB) error {
-// 	return db.AutoMigrate(
+// 	return pgdb.AutoMigrate(
 // 		&models.Host{},
 // 		&models.Process{},
 // 		&models.Container{},
@@ -226,7 +221,7 @@ func createTTLIndexes(db *mongo.Database, ttlDays int) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		_, err := db.Collection(collection).Indexes().CreateOne(ctx, model)
+		_, err := pgdb.Collection(collection).Indexes().CreateOne(ctx, model)
 		if err != nil {
 			return err
 		}
