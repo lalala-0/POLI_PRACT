@@ -102,7 +102,7 @@ func (c *DockerCollector) Collect(metrics *models.AgentMetrics) error {
 	metrics.Containers = containerInfos
 	return nil
 }
-///////////////////
+
 func calculateCPUPercent(stats types.StatsJSON) float64 {
 	cpuDelta := float64(stats.CPUStats.CPUUsage.TotalUsage) - float64(stats.PreCPUStats.CPUUsage.TotalUsage)
 	systemDelta := float64(stats.CPUStats.SystemUsage) - float64(stats.PreCPUStats.SystemUsage)

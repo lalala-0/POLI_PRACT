@@ -1,10 +1,10 @@
 package services
 
 import (
-	"POLI_PRACT/center/internal/models"
-	"POLI_PRACT/center/internal/repositories"
-	"POLI_PRACT/center/internal/repositories/mongobd"
-	"POLI_PRACT/center/internal/repositories/postgres"
+	"center/internal/models"
+	"center/internal/repositories"
+	"center/internal/repositories/mongobd"
+	"center/internal/repositories/postgres"
 	"net/http"
 	"time"
 	"encoding/json"

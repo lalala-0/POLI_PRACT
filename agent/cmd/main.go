@@ -11,8 +11,11 @@ import (
 )
 
 func main() {
-	// Загрузка конфигурации из переменных окружения или флагов
-	cfg := config.LoadConfig()
+	// Загрузка конфигурации из файла
+	cfg, err := config.LoadAgentConfig("configs/agent.yaml")
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
 
 	// Создание контекста с возможностью отмены
 	ctx, cancel := context.WithCancel(context.Background())

@@ -1,10 +1,10 @@
 package postgres
 
 import (
+	"center/internal/models"
 	"context"
 	"database/sql"
 	"errors"
-	"POLI_PRACT/center/internal/models"
 )
 
 type PostgresAlertRepository struct {

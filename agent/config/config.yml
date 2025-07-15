@@ -1,0 +1,12 @@
+host_id: "host-12345"
+server_address: "http://center:8080"
+poll_interval: 60s
+port: 8081
+processes:
+  - "nginx"
+  - "postgres"
+  - "redis"
+containers:
+  - "web-app"
+  - "db-postgres"
+  - "cache-redis"
