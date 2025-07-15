@@ -197,8 +197,8 @@ func (s *HostService) SaveNetworkMetrics(ctx context.Context, metrics *models.Ne
 
 func (s *HostService) LoadInitialData(ctx context.Context, cfg *config.AppConfig) error {
 	//Проверка, есть ли уже данные
-	var count int
-	if count, err := s.HostRepo.GetHostCount(); err != nil {
+	count, err := s.HostRepo.GetHostCount()
+	if err != nil {
 		return err
 	}
 	if count > 0 {
@@ -237,7 +237,7 @@ func (s *HostService) LoadInitialData(ctx context.Context, cfg *config.AppConfig
 		for _, alert := range hostCfg.Alerts {
 			if _, err := s.CreateAlertRule(ctx, hostID, models.AlertInput{
 				MetricName:     alert.MetricName,
-				ThresholdValue: alert.ThresholdValue,
+				ThresholdValue: alert.Threshold,
 				Condition:      alert.Condition,
 				Enabled:        alert.Enabled,
 			}); err != nil {

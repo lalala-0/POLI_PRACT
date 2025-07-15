@@ -93,7 +93,7 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 		return
 	}
 
-	var metrics models.AgentMetrics
+	var metrics models.Host
 	if err := json.NewDecoder(resp.Body).Decode(&metrics); err != nil {
 		log.Printf("[%s] Error decoding metrics: %v", host.Hostname, err)
 		return
@@ -116,7 +116,7 @@ func (s *PollerService) updateHostStatus(ctx context.Context, hostID int, status
 }
 
 // ProcessHostMetrics обрабатывает и сохраняет метрики хоста
-func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metrics models.Host) {
+func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metrics models.Metrics) {
 	// Сохраняем системные метрики
 	if metrics. != (models.SystemMetrics{}) {
 		systemMetrics := models.SystemMetrics{
