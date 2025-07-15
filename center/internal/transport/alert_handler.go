@@ -2,11 +2,9 @@ package api
 
 import (
 	"center/internal/models"
+	"center/internal/services"
 	"net/http"
 	"strconv"
-	"context"
-	"time"
-
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +26,7 @@ func (h *AlertHandler) GetAlertsByHostID(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	alerts, err := h.service.alertRepo.GetByHostID(ctx, hostID)
+	alerts, err := h.service.AlertRepo.GetByHostID(ctx, hostID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -36,7 +34,7 @@ func (h *AlertHandler) GetAlertsByHostID(c *gin.Context) {
 	c.JSON(http.StatusOK, alerts)
 }
 
-//id - host
+// id - host
 func (h *AlertHandler) CreateAlert(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -60,7 +58,6 @@ func (h *AlertHandler) CreateAlert(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
-
 func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -75,7 +72,7 @@ func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	alert, err := h.service.alertRepo.GetByID(ctx, alertID)
+	alert, err := h.service.AlertRepo.GetByID(ctx, alertID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -96,7 +93,7 @@ func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 	alert.Condition = alertInput.Condition
 	alert.Enabled = alertInput.Enabled
 
-	if err := h.service.alertRepo.Update(ctx, alert); err != nil {
+	if err := h.service.AlertRepo.Update(ctx, alert); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -118,7 +115,7 @@ func (h *AlertHandler) DeleteAlert(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	alert, err := h.service.alertRepo.GetByID(ctx, alertID)
+	alert, err := h.service.AlertRepo.GetByID(ctx, alertID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -128,7 +125,7 @@ func (h *AlertHandler) DeleteAlert(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.alertRepo.Delete(ctx, alertID); err != nil {
+	if err := h.service.AlertRepo.Delete(ctx, alertID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -158,7 +155,7 @@ func (h *AlertHandler) EnableDisableAlert(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	alert, err := h.service.alertRepo.GetByID(ctx, alertID)
+	alert, err := h.service.AlertRepo.GetByID(ctx, alertID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -168,7 +165,7 @@ func (h *AlertHandler) EnableDisableAlert(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.alertRepo.SetEnabled(ctx, alertID, status.Enabled); err != nil {
+	if err := h.service.AlertRepo.SetEnabled(ctx, alertID, status.Enabled); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

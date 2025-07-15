@@ -6,13 +6,13 @@ import (
 
 // Host представляет информацию о хосте для мониторинга
 type Host struct {
-	ID        int       `json:"id" db:"id"`
-	Hostname  string    `json:"hostname" binding:"required" db:"hostname"`
-	IPAddress string    `json:"ip_address" binding:"required" db:"ip_address"`
-	AgentPort int       `json:"agent_port" db:"agent_port"` 
-	Priority  int       `json:"priority" db:"priority"`
-	IsMaster  bool      `json:"is_master" db:"is_master"`
-	Status    string    `json:"status" db:"status"`
+	ID        int    `json:"id" db:"id"`
+	Hostname  string `json:"hostname" binding:"required" db:"hostname"`
+	IPAddress string `json:"ip_address" binding:"required" db:"ip_address"`
+	AgentPort int    `json:"agent_port" db:"agent_port"`
+	Priority  int    `json:"priority" db:"priority"`
+	IsMaster  bool   `json:"is_master" db:"is_master"`
+	Status    string `json:"status" db:"status"`
 	//LastCheck time.Time `json:"last_check" db:"last_check"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
@@ -22,6 +22,7 @@ type Host struct {
 type HostInput struct {
 	Hostname  string `json:"hostname" binding:"required"`
 	IPAddress string `json:"ip_address" binding:"required"`
+	AgentPort int    `json:"agent_port" binding:"required"`
 	Priority  int    `json:"priority"`
 }
 

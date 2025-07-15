@@ -1,20 +1,24 @@
-package postgres
+package repositories
 
 import (
 	"center/internal/models"
+	"context"
 	"database/sql"
 	"errors"
-	"context"
 )
 
 type PostgresProcessRepository struct {
 	db *sql.DB
 }
 
+func NewPostgresProcessRepository(db *sql.DB) *PostgresProcessRepository {
+	return &PostgresProcessRepository{db: db}
+}
+
 // GetByHostID возвращает все процессы для указанного хоста
 func (p *PostgresProcessRepository) GetByHostID(ctx context.Context, hostID int) ([]models.Process, error) {
 	const query = `SELECT id, host_id, process_name FROM host_processes WHERE host_id = $1`
-	
+
 	rows, err := p.db.QueryContext(ctx, query, hostID)
 	if err != nil {
 		return nil, err
@@ -40,12 +44,12 @@ func (p *PostgresProcessRepository) GetByHostID(ctx context.Context, hostID int)
 // GetByID возвращает процесс по его идентификатору
 func (p *PostgresProcessRepository) GetByID(ctx context.Context, id int) (*models.Process, error) {
 	const query = `SELECT id, host_id, process_name FROM host_processes WHERE id = $1`
-	
+
 	row := p.db.QueryRowContext(ctx, query, id)
-	
+
 	var proc models.Process
 	err := row.Scan(&proc.ID, &proc.HostID, &proc.ProcessName)
-	
+
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return nil, nil
@@ -61,7 +65,7 @@ func (p *PostgresProcessRepository) Create(ctx context.Context, process *models.
 	const query = `INSERT INTO host_processes (host_id, process_name) 
 				   VALUES ($1, $2) 
 				   RETURNING id`
-	
+
 	var id int
 	err := p.db.QueryRowContext(
 		ctx,
@@ -69,11 +73,11 @@ func (p *PostgresProcessRepository) Create(ctx context.Context, process *models.
 		process.HostID,
 		process.ProcessName,
 	).Scan(&id)
-	
+
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return id, nil
 }
 
@@ -85,7 +89,7 @@ func (p *PostgresProcessRepository) Update(ctx context.Context, process *models.
 			process_name = $2 
 		WHERE id = $3
 	`
-	
+
 	result, err := p.db.ExecContext(
 		ctx,
 		query,
@@ -93,41 +97,41 @@ func (p *PostgresProcessRepository) Update(ctx context.Context, process *models.
 		process.ProcessName,
 		process.ID,
 	)
-	
+
 	if err != nil {
 		return err
 	}
-	
+
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
-	
+
 	if rowsAffected == 0 {
 		return sql.ErrNoRows
 	}
-	
+
 	return nil
 }
 
 // Delete удаляет процесс по идентификатору
 func (p *PostgresProcessRepository) Delete(ctx context.Context, id int) error {
 	const query = `DELETE FROM host_processes WHERE id = $1`
-	
+
 	result, err := p.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
-	
+
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
-	
+
 	if rowsAffected == 0 {
 		return sql.ErrNoRows
 	}
-	
+
 	return nil
 }
 
@@ -140,19 +144,15 @@ func (p *PostgresProcessRepository) Exists(ctx context.Context, hostID int, proc
 			WHERE host_id = $1 AND process_name = $2
 		)
 	`
-	
+
 	var exists bool
 	err := p.db.QueryRowContext(ctx, query, hostID, processName).Scan(&exists)
-	
+
 	if err != nil {
 		return false, err
 	}
-	
-	return exists, nil
-}
 
-func NewProcessRepository(db *sql.DB) ProcessRepository {
-	return &PostgresProcessRepository{db: db}
+	return exists, nil
 }
 
 /*

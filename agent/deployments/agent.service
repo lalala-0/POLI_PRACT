@@ -3,7 +3,7 @@ Description=Monitoring Agent Service
 After=network.target
 
 [Service]
-ExecStart=/bin/agent -config /etc/agent/config.yaml
+ExecStart=/bin/agent/main -config /etc/agent/config.yml
 WorkingDirectory=/etc/agent
 Restart=on-failure
 RestartSec=5s

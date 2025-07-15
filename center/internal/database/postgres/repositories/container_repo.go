@@ -1,10 +1,11 @@
-package postgres
+package repositories
 
 import (
 	"center/internal/models"
 	"context"
-	"fmt"
 	"database/sql"
+	"errors"
+	"fmt"
 )
 
 // PostgresContainerRepository реализация репозитория хостов
@@ -22,7 +23,7 @@ func (r *PostgresContainerRepository) GetByHostID(ctx context.Context, hostID in
 		FROM host_containers 
 		WHERE host_id = $1
 	`
-	
+
 	rows, err := r.db.QueryContext(ctx, query, hostID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query containers: %w", err)
@@ -51,7 +52,7 @@ func (r *PostgresContainerRepository) GetByID(ctx context.Context, id int) (*mod
 		FROM host_containers 
 		WHERE id = $1
 	`
-	
+
 	var container models.Container
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&container.ID,
@@ -75,7 +76,7 @@ func (r *PostgresContainerRepository) Create(ctx context.Context, container *mod
 		VALUES ($1, $2)
 		RETURNING id
 	`
-	
+
 	var id int
 	err := r.db.QueryRowContext(
 		ctx,
@@ -97,7 +98,7 @@ func (r *PostgresContainerRepository) Update(ctx context.Context, container *mod
 		SET container_name = $1
 		WHERE id = $2
 	`
-	
+
 	result, err := r.db.ExecContext(
 		ctx,
 		query,
@@ -122,7 +123,7 @@ func (r *PostgresContainerRepository) Update(ctx context.Context, container *mod
 
 func (r *PostgresContainerRepository) Delete(ctx context.Context, id int) error {
 	const query = `DELETE FROM host_containers WHERE id = $1`
-	
+
 	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete container: %w", err)
@@ -148,7 +149,7 @@ func (r *PostgresContainerRepository) Exists(ctx context.Context, hostID int, co
 			WHERE host_id = $1 AND container_name = $2
 		)
 	`
-	
+
 	var exists bool
 	err := r.db.QueryRowContext(ctx, query, hostID, containerName).Scan(&exists)
 	if err != nil {
@@ -157,7 +158,6 @@ func (r *PostgresContainerRepository) Exists(ctx context.Context, hostID int, co
 
 	return exists, nil
 }
-
 
 /*
 // Инициализация

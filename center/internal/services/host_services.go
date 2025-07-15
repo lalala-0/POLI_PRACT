@@ -1,38 +1,37 @@
 package services
 
 import (
-	"POLI_PRACT/center/internal/models"
-	"POLI_PRACT/center/internal/repositories"
-	"net/http"
-	"time"
+	"center/internal/database/mongodb/repositories"
+	pg_repo "center/internal/database/postgres/repositories"
+	"center/internal/models"
 	"context"
 	"errors"
 	"log"
+	"time"
 )
-
 
 // HostService реализует бизнес-логику работы с хостами
 type HostService struct {
-	hostRepo     repositories.HostRepository
-	processRepo  repositories.ProcessRepository
-	containerRepo repositories.ContainerRepository
-	alertRepo    repositories.AlertRepository
-	metricRepo   repositories.MetricRepository
+	HostRepo      pg_repo.PostgresHostRepository
+	ProcessRepo   pg_repo.PostgresProcessRepository
+	ContainerRepo pg_repo.PostgresContainerRepository
+	AlertRepo     pg_repo.PostgresAlertRepository
+	MetricRepo    repositories.MongoMetricRepository
 }
 
 func NewHostService(
-	hostRepo repositories.HostRepository,
-	processRepo repositories.ProcessRepository,
-	containerRepo repositories.ContainerRepository,
-	alertRepo repositories.AlertRepository,
-	metricRepo repositories.MetricRepository,
+	hostRepo pg_repo.PostgresHostRepository,
+	processRepo pg_repo.PostgresProcessRepository,
+	containerRepo pg_repo.PostgresContainerRepository,
+	alertRepo pg_repo.PostgresAlertRepository,
+	metricRepo repositories.MongoMetricRepository,
 ) *HostService {
 	return &HostService{
-		hostRepo:     hostRepo,
-		processRepo:  processRepo,
-		containerRepo: containerRepo,
-		alertRepo:    alertRepo,
-		metricRepo:   metricRepo,
+		HostRepo:      hostRepo,
+		ProcessRepo:   processRepo,
+		ContainerRepo: containerRepo,
+		AlertRepo:     alertRepo,
+		MetricRepo:    metricRepo,
 	}
 }
 
@@ -41,59 +40,69 @@ func (s *HostService) CreateHost(ctx context.Context, hostInput models.HostInput
 	host := models.Host{
 		Hostname:  hostInput.Hostname,
 		IPAddress: hostInput.IPAddress,
+		AgentPort: hostInput.AgentPort,
 		Priority:  hostInput.Priority,
 		Status:    "pending",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	return s.hostRepo.Create(ctx, &host)
+	return s.HostRepo.Create(ctx, &host)
 }
 
 func (s *HostService) GetHost(ctx context.Context, id int) (*models.Host, error) {
-	return s.hostRepo.GetByID(ctx, id)
+	return s.HostRepo.GetByID(ctx, id)
 }
 
 func (s *HostService) UpdateHost(ctx context.Context, id int, hostInput models.HostInput) error {
-	host, err := s.hostRepo.GetByID(ctx, id)
+	host, err := s.HostRepo.GetByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
 	host.Hostname = hostInput.Hostname
 	host.IPAddress = hostInput.IPAddress
+	host.AgentPort = hostInput.AgentPort
 	host.Priority = hostInput.Priority
 	host.UpdatedAt = time.Now()
 
-	return s.hostRepo.Update(ctx, host)
+	return s.HostRepo.Update(ctx, host)
+}
+
+func (s *HostService) GetAllHosts(ctx context.Context) ([]models.Host, error) {
+	return s.HostRepo.GetAll(ctx)
+}
+
+func (s *HostService) UpdateHostStatus(ctx context.Context, id int, status string) error {
+	return s.HostRepo.UpdateStatus(ctx, id, status)
 }
 
 func (s *HostService) DeleteHost(ctx context.Context, id int) error {
-	return s.hostRepo.Delete(ctx, id)
+	return s.HostRepo.Delete(ctx, id)
 }
 
 func (s *HostService) SetMasterHost(ctx context.Context, id int) error {
 	// Сброс текущего мастера
-	currentMaster, err := s.hostRepo.GetMaster(ctx)
+	currentMaster, err := s.HostRepo.GetMaster(ctx)
 	if err == nil && currentMaster != nil {
 		currentMaster.IsMaster = false
-		if err := s.hostRepo.Update(ctx, currentMaster); err != nil {
+		if err := s.HostRepo.Update(ctx, currentMaster); err != nil {
 			log.Printf("Error resetting master: %v", err)
 		}
 	}
 
 	// Установка нового мастера
-	host, err := s.hostRepo.GetByID(ctx, id)
+	host, err := s.HostRepo.GetByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
 	host.IsMaster = true
-	return s.hostRepo.Update(ctx, host)
+	return s.HostRepo.Update(ctx, host)
 }
 
 // Process Operations
 func (s *HostService) AddProcess(ctx context.Context, hostID int, processName string) (int, error) {
-	exists, err := s.processRepo.Exists(ctx, hostID, processName)
+	exists, err := s.ProcessRepo.Exists(ctx, hostID, processName)
 	if err != nil {
 		return 0, err
 	}
@@ -105,12 +114,12 @@ func (s *HostService) AddProcess(ctx context.Context, hostID int, processName st
 		HostID:      hostID,
 		ProcessName: processName,
 	}
-	return s.processRepo.Create(ctx, process)
+	return s.ProcessRepo.Create(ctx, process)
 }
 
 // Container Operations
 func (s *HostService) AddContainer(ctx context.Context, hostID int, containerName string) (int, error) {
-	exists, err := s.containerRepo.Exists(ctx, hostID, containerName)
+	exists, err := s.ContainerRepo.Exists(ctx, hostID, containerName)
 	if err != nil {
 		return 0, err
 	}
@@ -122,7 +131,7 @@ func (s *HostService) AddContainer(ctx context.Context, hostID int, containerNam
 		HostID:        hostID,
 		ContainerName: containerName,
 	}
-	return s.containerRepo.Create(ctx, container)
+	return s.ContainerRepo.Create(ctx, container)
 }
 
 // Alert Operations
@@ -134,9 +143,8 @@ func (s *HostService) CreateAlertRule(ctx context.Context, hostID int, alertInpu
 		Condition:      alertInput.Condition,
 		Enabled:        alertInput.Enabled,
 	}
-	return s.alertRepo.Create(ctx, rule)
+	return s.AlertRepo.Create(ctx, rule)
 }
-
 
 // type AlertService struct {
 // 	logger *logrus.Logger
@@ -169,20 +177,19 @@ func (s *HostService) CreateAlertRule(ctx context.Context, hostID int, alertInpu
 // 	}
 // }
 
-
 // Metrics Operations
 func (s *HostService) SaveSystemMetrics(ctx context.Context, metrics *models.SystemMetrics) error {
-	return s.metricRepo.SaveSystemMetrics(ctx, metrics)
+	return s.MetricRepo.SaveSystemMetrics(ctx, metrics)
 }
 
 func (s *HostService) SaveProcessMetrics(ctx context.Context, metrics *models.ProcessMetrics) error {
-	return s.metricRepo.SaveProcessMetrics(ctx, metrics)
+	return s.MetricRepo.SaveProcessMetrics(ctx, metrics)
 }
 
 func (s *HostService) SaveContainerMetrics(ctx context.Context, metrics *models.ContainerMetrics) error {
-	return s.metricRepo.SaveContainerMetrics(ctx, metrics)
+	return s.MetricRepo.SaveContainerMetrics(ctx, metrics)
 }
 
 func (s *HostService) SaveNetworkMetrics(ctx context.Context, metrics *models.NetworkMetrics) error {
-	return s.metricRepo.SaveNetworkMetrics(ctx, metrics)
+	return s.MetricRepo.SaveNetworkMetrics(ctx, metrics)
 }

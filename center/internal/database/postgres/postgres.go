@@ -1,96 +1,95 @@
 package db
+
 //package postgres
 
 import (
+	"center/internal/config"
 	"database/sql"
 	"fmt"
 	"log"
-    "errors"
 	"strings"
 
 	// Импортируем все возможные драйверы
-    _ "github.com/go-sql-driver/mysql"
-    _ "github.com/lib/pq"
-    _ "github.com/mattn/go-sqlite3"
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var DB *sql.DB
 
-type PostgresConfig struct {
-    Driver          string
-    Host            string
-    Port            string
-    User            string
-    Password        string
-    DBName          string
-    SSLMode         string
-    MaxOpenConns 	uint64 		 
-	MaxIdleConns 	uint64 		  
-	ConnMaxLifetime time.Duration 
-}
+//
+//type PostgresConfig struct {
+//	Driver          string
+//	Host            string
+//	Port            string
+//	User            string
+//	Password        string
+//	DBName          string
+//	SSLMode         string
+//	MaxOpenConns    uint64
+//	MaxIdleConns    uint64
+//	ConnMaxLifetime time.Duration
+//}
 
-func InitPostgres(cfg PostgresConfig) (*sql.DB, error) {
-	connStr := generateConnectionString(cnf)
+func InitPostgres(cfg config.PostgresConfig) error {
+	connStr := generateConnectionString(cfg)
 	var err error
 	DB, err = sql.Open(cfg.driver, connStr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err = DB.Ping(); err != nil {
-		return nil, err
+		return err
 	}
-    configureConnectionPool(cnf)
+	configureConnectionPool(cfg)
 	log.Println("Connected to PostgreSQL database")
-	return DB, nil
+	return nil
 }
 
+func generateConnectionString(cfg config.PostgresConfig) string {
+	switch cfg.Driver {
+	case "postgres", "pq":
+		if cfg.SSLMode == "" {
+			cfg.SSLMode = "disable"
+		}
+		return fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s DBname=%s sslmode=%s",
+			cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode)
 
-func generateConnectionString(cfg PostgresConfig) string {
-    switch cfg.Driver {
-    case "postgres", "pq":
-        if cfg.SSLMode == "" {
-            cfg.SSLMode = "disable"
-        }
-        return fmt.Sprintf(
-            "host=%s port=%s user=%s password=%s DBname=%s sslmode=%s",
-            cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode)
-    
-	 case "pgx":
-        if cfg.SSLMode == "" {
-            cfg.SSLMode = "disable"
-        }
-        return fmt.Sprintf(
-            "postgres://%s:%s@%s:%s/%s?sslmode=%s",
-            cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName, cfg.SSLMode)
-            
-    case "mysql":
-        return fmt.Sprintf(
-            "%s:%s@tcp(%s:%s)/%s?parseTime=true",
-            cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
-            
-    case "sqlite3":
-        return cfg.DBName
-        
-    default:
-        return ""
-    }
+	case "pgx":
+		if cfg.SSLMode == "" {
+			cfg.SSLMode = "disable"
+		}
+		return fmt.Sprintf(
+			"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+			cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName, cfg.SSLMode)
+
+	case "mysql":
+		return fmt.Sprintf(
+			"%s:%s@tcp(%s:%s)/%s?parseTime=true",
+			cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
+
+	case "sqlite3":
+		return cfg.DBName
+
+	default:
+		return ""
+	}
 }
 
-
-func configureConnectionPool(cfg PostgresConfig) {
+func configureConnectionPool(cfg config.PostgresConfig) {
 	//максимальное количество одновременно открытых соединений с БД
-    DB.SetMaxOpenConns(cnf.MaxOpenConns)
+	DB.SetMaxOpenConns(cfg.MaxOpenConns)
 	//количество неактивных соединений, которые сохраняются в пуле
-    DB.SetMaxIdleConns(cnf.MaxIdleConns)
+	DB.SetMaxIdleConns(cfg.MaxIdleConns)
 	//максимальное время жизни соединения
-    DB.SetConnMaxLifetime(cnf.ConnMaxLifetime)
+	DB.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 }
-
 
 // Проверяет структуру БД
-func ensureDBStructure() error {
+func EnsurePostgresStructure() error {
 	// Проверка существования таблиц
 	requiredTables := []string{
 		"hosts",
@@ -152,11 +151,11 @@ func ensureDBStructure() error {
 
 	// 3. Проверка внешних ключей
 	foreignKeys := []struct {
-		Table       string
-		Column      string
-		RefTable    string
-		RefColumn   string
-		OnDelete    string
+		Table     string
+		Column    string
+		RefTable  string
+		RefColumn string
+		OnDelete  string
 	}{
 		{"host_processes", "host_id", "hosts", "id", "CASCADE"},
 		{"host_containers", "host_id", "hosts", "id", "CASCADE"},

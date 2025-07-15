@@ -1,14 +1,16 @@
-package postgres
+package repositories
 
 import (
 	"center/internal/models"
+
 	"context"
+	//"database/sql"
 	"time"
 )
 
 // HostRepository интерфейс для работы с хостами в БД
 type HostRepository interface {
-	NewHostRepository(db *sql.DB) HostRepository
+	//NewPostgresHostRepository(db *sql.DB) *PostgresHostRepository
 	GetAll(ctx context.Context) ([]models.Host, error)
 	GetByID(ctx context.Context, id int) (*models.Host, error)
 	Create(ctx context.Context, host *models.Host) (int, error)
@@ -22,6 +24,7 @@ type HostRepository interface {
 
 // ProcessRepository интерфейс для работы с процессами в БД
 type ProcessRepository interface {
+	//NewPostgresProcessRepository(db *sql.DB) *PostgresProcessRepository
 	GetByHostID(ctx context.Context, hostID int) ([]models.Process, error)
 	GetByID(ctx context.Context, id int) (*models.Process, error)
 	Create(ctx context.Context, process *models.Process) (int, error)

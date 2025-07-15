@@ -2,11 +2,11 @@ package api
 
 import (
 	"center/internal/models"
+	"center/internal/services"
+	"context"
 	"net/http"
 	"strconv"
-	"context"
 	"time"
-
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,14 +19,13 @@ func NewMetricHandler(service *services.HostService) *MetricHandler {
 	return &MetricHandler{service: service}
 }
 
-
 // ReceiveMetrics принимает метрики от агента
 func (h *MetricHandler) ReceiveMetrics(c *gin.Context) {
 	var metricsData struct {
-		System    *models.SystemMetrics    `json:"system"`
-		Processes *models.ProcessMetrics   `json:"processes"`
+		System     *models.SystemMetrics    `json:"system"`
+		Processes  *models.ProcessMetrics   `json:"processes"`
 		Containers *models.ContainerMetrics `json:"containers"`
-		Network   *models.NetworkMetrics   `json:"network"`
+		Network    *models.NetworkMetrics   `json:"network"`
 	}
 
 	if err := c.ShouldBindJSON(&metricsData); err != nil {
@@ -82,7 +81,7 @@ func (h *MetricHandler) GetSystemMetrics(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	metrics, err := h.service.metricRepo.GetSystemMetricsInRange(ctx, hostID, from, to)
+	metrics, err := h.service.MetricRepo.GetSystemMetricsInRange(ctx, hostID, from, to)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -106,7 +105,7 @@ func (h *MetricHandler) GetProcessMetrics(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	metrics, err := h.service.metricRepo.GetProcessMetricsInRange(ctx, hostID, from, to)
+	metrics, err := h.service.MetricRepo.GetProcessMetricsInRange(ctx, hostID, from, to)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -130,7 +129,7 @@ func (h *MetricHandler) GetContainerMetrics(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	metrics, err := h.service.metricRepo.GetContainerMetricsInRange(ctx, hostID, from, to)
+	metrics, err := h.service.MetricRepo.GetContainerMetricsInRange(ctx, hostID, from, to)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -154,7 +153,7 @@ func (h *MetricHandler) GetNetworkMetrics(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	metrics, err := h.service.metricRepo.GetNetworkMetricsInRange(ctx, hostID, from, to)
+	metrics, err := h.service.MetricRepo.GetNetworkMetricsInRange(ctx, hostID, from, to)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -166,7 +165,6 @@ func (h *MetricHandler) GetNetworkMetrics(c *gin.Context) {
 func (h *MetricHandler) GetHealth(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
-
 
 // parseTimeRange парсит параметры времени из запроса
 func parseTimeRange(c *gin.Context) (from, to time.Time, err error) {

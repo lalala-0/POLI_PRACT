@@ -2,15 +2,12 @@ package api
 
 import (
 	"center/internal/models"
+	"center/internal/services"
 	"net/http"
 	"strconv"
-	"context"
-	"time"
-
 
 	"github.com/gin-gonic/gin"
 )
-
 
 type HostHandler struct {
 	service *services.HostService
@@ -23,7 +20,7 @@ func NewHostHandler(service *services.HostService) *HostHandler {
 // GetHosts возвращает список всех хостов
 func (h *HostHandler) GetHosts(c *gin.Context) {
 	ctx := c.Request.Context()
-	hosts, err := h.service.hostRepo.GetAll(ctx)
+	hosts, err := h.service.HostRepo.GetAll(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -106,7 +103,7 @@ func (h *HostHandler) DeleteHost(c *gin.Context) {
 
 func (h *HostHandler) GetMasterHost(c *gin.Context) {
 	ctx := c.Request.Context()
-	host, err := h.service.hostRepo.GetMaster(ctx)
+	host, err := h.service.HostRepo.GetMaster(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -115,17 +112,17 @@ func (h *HostHandler) GetMasterHost(c *gin.Context) {
 }
 
 func (h *HostHandler) SetMasterHost(c *gin.Context) {
-    id, err := strconv.Atoi(c.Param("id"))
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
-        return
-    }
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
 
-    ctx := c.Request.Context()
-    if err := h.service.SetMasterHost(ctx, id); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	ctx := c.Request.Context()
+	if err := h.service.SetMasterHost(ctx, id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-    c.Status(http.StatusNoContent)
+	c.Status(http.StatusNoContent)
 }

@@ -1,16 +1,14 @@
 package services
 
 import (
+	"bytes"
 	"center/internal/models"
-	"center/internal/repositories"
-	"center/internal/repositories/mongobd"
-	"center/internal/repositories/postgres"
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"time"
-	"encoding/json"
-	"context"
-	"errors"
-	"log"
 )
 
 // PollerService отвечает за периодический опрос агентов
@@ -18,27 +16,23 @@ type PollerService struct {
 	hostService *HostService
 	interval    time.Duration
 	httpClient  *http.Client
-	logger      *log.Logger
+	//logger      *log.Logger
 }
 
-func NewPollerService(
-	hostService *HostService,
-	interval time.Duration,
-	logger *log.Logger,
-) *PollerService {
+func NewPollerService(hostService *HostService, interval time.Duration) *PollerService {
 	return &PollerService{
 		hostService: hostService,
 		interval:    interval,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
-		logger: logger,
+		//logger: logger,
 	}
 }
 
 // Start запускает процесс опроса хостов
 func (s *PollerService) Start(ctx context.Context) {
-	s.logger.Println("Starting poller service...")
+	log.Println("Starting poller service...")
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
 
@@ -50,7 +44,7 @@ func (s *PollerService) Start(ctx context.Context) {
 		case <-ticker.C:
 			s.pollHosts(ctx)
 		case <-ctx.Done():
-			s.logger.Println("Stopping poller service...")
+			log.Println("Stopping poller service...")
 			return
 		}
 	}
@@ -58,10 +52,10 @@ func (s *PollerService) Start(ctx context.Context) {
 
 // pollHosts опрашивает все активные хосты
 func (s *PollerService) pollHosts(ctx context.Context) {
-	s.logger.Println("Polling hosts...")
+	log.Println("Polling hosts...")
 	hosts, err := s.hostService.GetAllHosts(ctx)
 	if err != nil {
-		s.logger.Printf("Error getting hosts: %v", err)
+		log.Printf("Error getting hosts: %v", err)
 		return
 	}
 
@@ -77,7 +71,7 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		s.logger.Printf("[%s] Error creating request: %v", host.Hostname, err)
+		log.Printf("[%s] Error creating request: %v", host.Hostname, err)
 		s.updateHostStatus(ctx, host.ID, "error")
 		return
 	}
@@ -87,21 +81,21 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 	duration := time.Since(start)
 
 	if err != nil {
-		s.logger.Printf("[%s] Polling error: %v", host.Hostname, err)
+		log.Printf("[%s] Polling error: %v", host.Hostname, err)
 		s.updateHostStatus(ctx, host.ID, "down")
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		s.logger.Printf("[%s] Unexpected status: %d", host.Hostname, resp.StatusCode)
+		log.Printf("[%s] Unexpected status: %d", host.Hostname, resp.StatusCode)
 		s.updateHostStatus(ctx, host.ID, "unstable")
 		return
 	}
 
 	var metrics models.AgentMetrics
 	if err := json.NewDecoder(resp.Body).Decode(&metrics); err != nil {
-		s.logger.Printf("[%s] Error decoding metrics: %v", host.Hostname, err)
+		log.Printf("[%s] Error decoding metrics: %v", host.Hostname, err)
 		return
 	}
 
@@ -111,13 +105,13 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 	// Сохраняем метрики
 	s.hostService.ProcessHostMetrics(ctx, host.ID, metrics)
 
-	s.logger.Printf("[%s] Metrics collected in %v", host.Hostname, duration)
+	log.Printf("[%s] Metrics collected in %v", host.Hostname, duration)
 }
 
 // updateHostStatus обновляет статус хоста в БД
 func (s *PollerService) updateHostStatus(ctx context.Context, hostID int, status string) {
 	if err := s.hostService.UpdateHostStatus(ctx, hostID, status); err != nil {
-		s.logger.Printf("Error updating host status: %v", err)
+		log.Printf("Error updating host status: %v", err)
 	}
 }
 
@@ -133,7 +127,7 @@ func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metric
 			Disk:      metrics.System.Disk,
 		}
 		if err := s.SaveSystemMetrics(ctx, &systemMetrics); err != nil {
-			s.logger.Printf("Error saving system metrics: %v", err)
+			log.Printf("Error saving system metrics: %v", err)
 		}
 	}
 
@@ -145,7 +139,7 @@ func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metric
 			Processes: metrics.Processes,
 		}
 		if err := s.SaveProcessMetrics(ctx, &processMetrics); err != nil {
-			s.logger.Printf("Error saving process metrics: %v", err)
+			log.Printf("Error saving process metrics: %v", err)
 		}
 	}
 
@@ -157,7 +151,7 @@ func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metric
 			Ports:     metrics.Ports,
 		}
 		if err := s.SaveNetworkMetrics(ctx, &networkMetrics); err != nil {
-			s.logger.Printf("Error saving network metrics: %v", err)
+			log.Printf("Error saving network metrics: %v", err)
 		}
 	}
 
@@ -169,7 +163,7 @@ func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metric
 			Containers: metrics.Containers,
 		}
 		if err := s.SaveContainerMetrics(ctx, &containerMetrics); err != nil {
-			s.logger.Printf("Error saving container metrics: %v", err)
+			log.Printf("Error saving container metrics: %v", err)
 		}
 	}
 }
@@ -177,7 +171,7 @@ func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metric
 // SendConfigurationToAgent отправляет конфигурацию на агент
 func (s *HostService) SendConfigurationToAgent(ctx context.Context, host models.Host) error {
 	// Отправка конфигурации процессов
-	processes, err := s.processRepo.GetByHostID(ctx, host.ID)
+	processes, err := s.ProcessRepo.GetByHostID(ctx, host.ID)
 	if err != nil {
 		return err
 	}
@@ -194,7 +188,7 @@ func (s *HostService) SendConfigurationToAgent(ctx context.Context, host models.
 	}
 
 	// Отправка конфигурации контейнеров
-	containers, err := s.containerRepo.GetByHostID(ctx, host.ID)
+	containers, err := s.ContainerRepo.GetByHostID(ctx, host.ID)
 	if err != nil {
 		return err
 	}

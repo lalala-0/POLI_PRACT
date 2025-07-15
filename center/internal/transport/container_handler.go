@@ -2,14 +2,15 @@ package api
 
 import (
 	"center/internal/models"
+	"center/internal/services"
+	"context"
 	"net/http"
 	"strconv"
-	"context"
 	"time"
-
 
 	"github.com/gin-gonic/gin"
 )
+
 type ContainerHandler struct {
 	service *services.HostService
 }
@@ -19,7 +20,7 @@ func NewContainerHandler(service *services.HostService) *ContainerHandler {
 }
 
 // Container Handlers
-func (h *ContainerHandler) GetContainerByHostID(c *gin.Context) {
+func (h *ContainerHandler) GetContainersByHostID(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid host ID"})
@@ -27,7 +28,7 @@ func (h *ContainerHandler) GetContainerByHostID(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	container, err := h.service.containerRepo.GetByHostID(ctx, hostID)
+	container, err := h.service.ContainerRepo.GetByHostID(ctx, hostID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -58,8 +59,8 @@ func (h *ContainerHandler) CreateContainer(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
-//id - host
-//container_id - container
+// id - host
+// container_id - container
 func (h *ContainerHandler) DeleteContainer(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -74,7 +75,7 @@ func (h *ContainerHandler) DeleteContainer(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	if err := h.service.containerRepo.Delete(ctx, containerID); err != nil {
+	if err := h.service.ContainerRepo.Delete(ctx, containerID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

@@ -103,9 +103,9 @@
 
 2. Распределяем необходимые файлы по директориям
 - Создаем директорию `sudo mkdir -p /etc/agent`
-- Конфиг config.yaml добавляем в папку /etc/agent `sudo cp ./config/agent.yaml /etc/agent/`
+- Конфиг config.yaml добавляем в папку /etc/agent `sudo cp ./config/config.yml /etc/agent/`
 - Создаем директорию `sudo mkdir -p /bin/agent`
-- Бинарник main.exe добавляем в папку /bin/agent `sudo cp ./main.exe /bin/agent/`
+- Бинарник main.exe добавляем в папку /bin/agent `sudo cp ./main /bin/agent/`
 
 3. Создаём agent.service
 - копируем юнит-файл `sudo cp ./deployments/agent.service /etc/systemd/system/`

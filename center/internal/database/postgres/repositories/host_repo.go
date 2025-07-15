@@ -1,12 +1,10 @@
-package postgres
+package repositories
 
 import (
 	"center/internal/models"
 	"context"
 	"database/sql"
 	"time"
-	"fmt"
-	"errors"
 )
 
 // PostgresHostRepository реализация репозитория хостов
@@ -15,10 +13,9 @@ type PostgresHostRepository struct {
 }
 
 // NewHostRepository создает новый репозиторий хостов
-func NewHostRepository(db *sql.DB) HostRepository {
+func NewPostgresHostRepository(db *sql.DB) *PostgresHostRepository {
 	return &PostgresHostRepository{db: db}
 }
-
 
 func (r *PostgresHostRepository) GetByID(ctx context.Context, id int) (*models.Host, error) {
 	query := `SELECT id, hostname, ip_address, priority, is_master, status, created_at, updated_at FROM hosts WHERE id = $1`
@@ -27,7 +24,7 @@ func (r *PostgresHostRepository) GetByID(ctx context.Context, id int) (*models.H
 	err := r.db.QueryRowContext(ctx, query, id).Scan(&host.ID, &host.Hostname, &host.IPAddress,
 		&host.AgentPort, &host.Priority, &host.IsMaster, &host.Status, &host.CreatedAt, &host.UpdatedAt)
 
-//	host.LastCheck = host.UpdatedAt
+	//	host.LastCheck = host.UpdatedAt
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -180,7 +177,6 @@ func (r *PostgresHostRepository) UpdateStatus(ctx context.Context, id int, statu
 	return nil
 }
 
-
 // GetAll возвращает все хосты
 func (r *PostgresHostRepository) GetAll(ctx context.Context) ([]models.Host, error) {
 	query := `SELECT id, hostname, ip_address, agent_port, priority, is_master, status, last_check, 
@@ -213,8 +209,8 @@ func (r *PostgresHostRepository) GetMaster(ctx context.Context) (*models.Host, e
 
 	var host models.Host
 	err := r.db.QueryRowContext(ctx, query).Scan(&host.ID, &host.Hostname, &host.IPAddress,
-		&host.AgentPort, &host.Priority, &host.IsMaster, &host.Status,  &host.CreatedAt, &host.UpdatedAt)
-	&host.UpdatedAt
+		&host.AgentPort, &host.Priority, &host.IsMaster, &host.Status, &host.CreatedAt, &host.UpdatedAt)
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}

@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 type ServerConfig struct {
 	Port         string        `yaml:"port"`
 	ReadTimeout  time.Duration `yaml:"read_timeout"`
@@ -7,21 +9,21 @@ type ServerConfig struct {
 }
 
 type PostgresConfig struct {
-	Host    	 	string		  `yaml:"host"`
-	Port     	 	string 		  `yaml:"port"`
-	User     	 	string 		  `yaml:"user"`
-	Password 		string		  `yaml:"password"`
-	DBName   	 	string 		  `yaml:"dbname"`
-	SSLMode  	 	string 		  `yaml:"sslmode"`
-	Driver   	 	string 		  `yaml:"driver"`
-	MaxOpenConns 	uint64 		  `yaml:"maxOpenConns"`
-	MaxIdleConns 	uint64 		  `yaml:"maxIdleConns"`
+	Host            string        `yaml:"host"`
+	Port            string        `yaml:"port"`
+	User            string        `yaml:"user"`
+	Password        string        `yaml:"password"`
+	DBName          string        `yaml:"dbname"`
+	SSLMode         string        `yaml:"sslmode"`
+	Driver          string        `yaml:"driver"`
+	MaxOpenConns    uint64        `yaml:"maxOpenConns"`
+	MaxIdleConns    uint64        `yaml:"maxIdleConns"`
 	ConnMaxLifetime time.Duration `yaml:"connMaxLifetime"`
 }
 
 type MongoDBConfig struct {
-	URI    				   string 		 `yaml:"uri"`
-	DBName 				   string 		 `yaml:"dbname"`
+	URI                    string        `yaml:"uri"`
+	DBName                 string        `yaml:"dbname"`
 	ConnectTimeout         time.Duration `yaml:"connectTimeout"`
 	MaxPoolSize            uint64        `yaml:"maxPoolSize"`
 	MinPoolSize            uint64        `yaml:"minPoolSize"`
@@ -69,13 +71,13 @@ type InitialDataConfig struct {
 }
 
 type HostConfig struct {
-	Hostname   string       `yaml:"hostname"`
-	IPAddress  string       `yaml:"ip_address"`
-	AgentPort  int      `mapstructure:"agent_port"`
-	Priority   int          `yaml:"priority"`
-	IsMaster   bool         `yaml:"is_master"`
-	Processes  []string     `yaml:"processes"`
-	Containers []string     `yaml:"containers"`
+	Hostname   string        `yaml:"hostname"`
+	IPAddress  string        `yaml:"ip_address"`
+	AgentPort  int           `mapstructure:"agent_port"`
+	Priority   int           `yaml:"priority"`
+	IsMaster   bool          `yaml:"is_master"`
+	Processes  []string      `yaml:"processes"`
+	Containers []string      `yaml:"containers"`
 	Alerts     []AlertConfig `yaml:"alerts"`
 }
 
