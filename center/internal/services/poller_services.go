@@ -93,7 +93,7 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 		return
 	}
 
-	var metrics models.Host
+	var metrics models.Metrics
 	if err := json.NewDecoder(resp.Body).Decode(&metrics); err != nil {
 		log.Printf("[%s] Error decoding metrics: %v", host.Hostname, err)
 		return
@@ -118,25 +118,22 @@ func (s *PollerService) updateHostStatus(ctx context.Context, hostID int, status
 // ProcessHostMetrics обрабатывает и сохраняет метрики хоста
 func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metrics models.Metrics) {
 	// Сохраняем системные метрики
-	if metrics. != (models.SystemMetrics{}) {
-		systemMetrics := models.SystemMetrics{
-			HostID:    hostID,
-			Timestamp: metrics.Timestamp,
-			CPU:       metrics.System.CPU,
-			RAM:       metrics.System.RAM,
-			Disk:      metrics.System.Disk,
-		}
-		if err := s.SaveSystemMetrics(ctx, &systemMetrics); err != nil {
-			log.Printf("Error saving system metrics: %v", err)
-		}
+	systemMetrics := models.SystemMetrics{
+		HostID:    hostID,
+		Timestamp: metrics.Timestamp,
+		System:    metrics.SystemMetrics,
+	}
+
+	if err := s.SaveSystemMetrics(ctx, &systemMetrics); err != nil {
+		log.Printf("Error saving system metrics: %v", err)
 	}
 
 	// Сохраняем метрики процессов
-	if len(metrics.Processes) > 0 {
+	if len(metrics.ProcessesInfo) > 0 {
 		processMetrics := models.ProcessMetrics{
 			HostID:    hostID,
 			Timestamp: metrics.Timestamp,
-			Processes: metrics.Processes,
+			Processes: metrics.ProcessesInfo,
 		}
 		if err := s.SaveProcessMetrics(ctx, &processMetrics); err != nil {
 			log.Printf("Error saving process metrics: %v", err)
@@ -144,11 +141,11 @@ func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metric
 	}
 
 	// Сохраняем сетевые метрики
-	if len(metrics.Ports) > 0 {
+	if len(metrics.PortsInfo) > 0 {
 		networkMetrics := models.NetworkMetrics{
 			HostID:    hostID,
 			Timestamp: metrics.Timestamp,
-			Ports:     metrics.Ports,
+			Ports:     metrics.PortsInfo,
 		}
 		if err := s.SaveNetworkMetrics(ctx, &networkMetrics); err != nil {
 			log.Printf("Error saving network metrics: %v", err)
@@ -156,11 +153,11 @@ func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metric
 	}
 
 	// Сохраняем метрики контейнеров
-	if len(metrics.Containers) > 0 {
+	if len(metrics.ContainersInfo) > 0 {
 		containerMetrics := models.ContainerMetrics{
 			HostID:     hostID,
 			Timestamp:  metrics.Timestamp,
-			Containers: metrics.Containers,
+			Containers: metrics.ContainersInfo,
 		}
 		if err := s.SaveContainerMetrics(ctx, &containerMetrics); err != nil {
 			log.Printf("Error saving container metrics: %v", err)

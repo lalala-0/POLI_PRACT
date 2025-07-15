@@ -23,8 +23,10 @@ type ContainerMetrics struct {
 
 // ContainerInfo представляет информацию о контейнере
 type ContainerInfo struct {
-	Name       string  `json:"name" bson:"name"`
-	Status     string  `json:"status" bson:"status"`
-	CPUPercent float64 `json:"cpu_percent" bson:"cpu_percent"`
-	MemoryMB   float64 `json:"memory_mb" bson:"memory_mb"`
+	Name          string  `json:"name" bson:"name"`
+	ID            string  `json:"id" bson:"id"`
+	Image         string  `json:"image" bson:"image"`
+	Status        string  `json:"status" bson:"status"`
+	CPUPercent    float64 `json:"cpu_percent" bson:"cpu_percent"`
+	MemoryPercent float64 `json:"mem_percent" bson:"mem_percent"`
 }
