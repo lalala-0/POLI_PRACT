@@ -7,6 +7,5 @@ processes:
   - "postgres"
   - "redis"
 containers:
-  - "web-app"
-  - "db-postgres"
-  - "cache-redis"
+  - "build-mongodb-1"
+  - "build-postgres-1"

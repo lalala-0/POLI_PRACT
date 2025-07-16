@@ -15,7 +15,7 @@ import (
 
 func main() {
 	// Загрузка конфигурации из переменных окружения или флагов
-	cfg, err := config.LoadConfig("/home/polina/Pract/POLI_PRACT/center/config/config.yml")
+	cfg, err := config.LoadConfig("/home/polina/POLI_PRACT/center/config/config.yml")
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}

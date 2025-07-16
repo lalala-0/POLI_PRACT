@@ -8,16 +8,16 @@ postgres:
   port: "5432"
   user: "postgres"
   password: "password"
-  dbname: "monitoring"
+  dbname: "build-postgres-1"
   sslmode: "disable"
-  driver: "pq"
+  driver: "postgres"
   maxOpenConns: 25
   maxIdleConns: 5
   connMaxLifetime: 5m
 
 mongodb:
   uri: "mongodb://mongo:27017"
-  dbname: "metrics"
+  dbname: "build-mongodb-1"
   connectTimeout: 5s
   maxPoolSize: 20
   minPoolSize: 5

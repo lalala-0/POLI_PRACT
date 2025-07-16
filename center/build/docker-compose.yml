@@ -28,8 +28,10 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_USER=postgres
       - POSTGRES_DB=monitoring
+      - LANG=en_US.utf8
+      - LC_ALL=en_US.utf8
     ports:
-      - "5432:5433"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../internal/database/postgres/init:/docker-entrypoint-initdb.d

@@ -95,6 +95,19 @@
 
 `curl http://localhost:8080/`
 
+1. Создайте специального пользователя для агента
+bash
+sudo useradd --system --no-create-home --shell /bin/false agentuser
+2. Добавьте пользователя в группу docker
+bash
+sudo usermod -aG docker agentuser
+3. Измените права на файлы
+bash
+sudo chown -R agentuser:docker /bin/agent
+sudo chmod 750 /bin/agent/main
+sudo chown -R agentuser:docker /etc/agent
+sudo chmod 640 /etc/agent/config.yml
+
 
 # Как добавить в автозапуск через systemctl
 1. Компилируем бинарник.
