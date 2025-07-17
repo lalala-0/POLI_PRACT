@@ -55,6 +55,8 @@ services:
   # MongoDB для хранения метрик
   mongodb:
     image: mongo:5
+    hostname: mongodb
+    container_name: build-mongodb-1
     ports:
       - "27017:27017"
     volumes:

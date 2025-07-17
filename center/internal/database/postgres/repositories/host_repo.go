@@ -179,7 +179,7 @@ func (r *PostgresHostRepository) UpdateStatus(ctx context.Context, id int, statu
 
 // GetAll возвращает все хосты
 func (r *PostgresHostRepository) GetAll(ctx context.Context) ([]models.Host, error) {
-	query := `SELECT id, hostname, ip_address, agent_port, priority, is_master, status, last_check, 
+	query := `SELECT id, hostname, ip_address, agent_port, priority, is_master, status, 
                   created_at, updated_at FROM hosts ORDER BY priority DESC`
 
 	rows, err := r.db.QueryContext(ctx, query)
@@ -213,7 +213,7 @@ func (r *PostgresHostRepository) GetHostCount() (int, error) {
 
 // GetMaster возвращает текущий мастер-хост
 func (r *PostgresHostRepository) GetMaster(ctx context.Context) (*models.Host, error) {
-	query := `SELECT id, hostname, ip_address, agent_port, priority, is_master, status, last_check, 
+	query := `SELECT id, hostname, ip_address, agent_port, priority, is_master, status, 
                   created_at, updated_at FROM hosts WHERE is_master = true LIMIT 1`
 
 	var host models.Host

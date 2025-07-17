@@ -66,8 +66,9 @@ func (s *PollerService) pollHosts(ctx context.Context) {
 
 // pollHost опрашивает конкретный хост
 func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
+	log.Printf("Polling host %s at %s:%d", host.Hostname, host.IPAddress, host.AgentPort)
 	// Формируем URL для запроса метрик
-	url := fmt.Sprintf("http://%s:%d/api/metrics", host.IPAddress, host.AgentPort)
+	url := fmt.Sprintf("http://%s:%d/metrics", host.IPAddress, host.AgentPort)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -178,7 +179,7 @@ func (s *HostService) SendConfigurationToAgent(ctx context.Context, host models.
 		processNames = append(processNames, p.ProcessName)
 	}
 
-	if err := s.sendToAgent(ctx, host, "/api/config/processes", map[string]interface{}{
+	if err := s.sendToAgent(ctx, host, "/config/processes", map[string]interface{}{
 		"processes": processNames,
 	}); err != nil {
 		return err
@@ -195,7 +196,7 @@ func (s *HostService) SendConfigurationToAgent(ctx context.Context, host models.
 		containerNames = append(containerNames, c.ContainerName)
 	}
 
-	return s.sendToAgent(ctx, host, "/api/config/containers", map[string]interface{}{
+	return s.sendToAgent(ctx, host, "/config/containers", map[string]interface{}{
 		"containers": containerNames,
 	})
 }
