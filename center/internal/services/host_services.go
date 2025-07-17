@@ -66,7 +66,19 @@ func (s *HostService) UpdateHost(ctx context.Context, id int, hostInput models.H
 	host.Priority = hostInput.Priority
 	host.UpdatedAt = time.Now()
 
-	return s.HostRepo.Update(ctx, host)
+	err = s.HostRepo.Update(ctx, host)
+	if err != nil {
+		return err
+	}
+
+	// Если изменился приоритет, перевыбираем мастера
+	if hostInput.Priority != 0 {
+		if err := s.electMasterHost(ctx); err != nil {
+			log.Printf("Failed to elect master host: %v", err)
+		}
+	}
+
+	return nil
 }
 
 func (s *HostService) GetAllHosts(ctx context.Context) ([]models.Host, error) {
@@ -78,27 +90,53 @@ func (s *HostService) UpdateHostStatus(ctx context.Context, id int, status strin
 }
 
 func (s *HostService) DeleteHost(ctx context.Context, id int) error {
-	return s.HostRepo.Delete(ctx, id)
-}
-
-func (s *HostService) SetMasterHost(ctx context.Context, id int) error {
-	// Сброс текущего мастера
-	currentMaster, err := s.HostRepo.GetMaster(ctx)
-	if err == nil && currentMaster != nil {
-		currentMaster.IsMaster = false
-		if err := s.HostRepo.Update(ctx, currentMaster); err != nil {
-			log.Printf("Error resetting master: %v", err)
-		}
-	}
-
-	// Установка нового мастера
-	host, err := s.HostRepo.GetByID(ctx, id)
-	if err != nil {
+	if err := s.HostRepo.Delete(ctx, id); err != nil {
 		return err
 	}
 
-	host.IsMaster = true
-	return s.HostRepo.Update(ctx, host)
+	// Перевыбираем мастера после удаления
+	return s.electMasterHost(ctx)
+}
+
+func (s *HostService) SetMasterHost(ctx context.Context, id int) error {
+	// Установка нового мастера
+	return s.HostRepo.SetMaster(ctx, id)
+}
+
+// Автоматически выбирает мастер-хост на основе приоритета
+func (s *HostService) electMasterHost(ctx context.Context) error {
+	hosts, err := s.HostRepo.GetAll(ctx)
+	if err != nil {
+		return err
+	}
+	log.Println("------------------------1------------------")
+	if len(hosts) == 0 {
+		return nil
+	}
+
+	log.Println("------------------------2------------------")
+	// Ищем хост с наивысшим приоритетом
+	var masterHost *models.Host
+	for _, host := range hosts {
+		if masterHost == nil {
+			masterHost = &host
+			continue
+		}
+
+		// Сравниваем приоритеты
+		if host.Priority > masterHost.Priority {
+			masterHost = &host
+		} else if host.Priority == masterHost.Priority {
+			// При равном приоритете выбираем самый старый хост
+			if host.CreatedAt.Before(masterHost.CreatedAt) {
+				masterHost = &host
+			}
+		}
+	}
+
+	log.Println("------------------------%d------------------", masterHost.ID)
+	// Устанавливаем найденный хост как мастер
+	return s.SetMasterHost(ctx, masterHost.ID)
 }
 
 // Process Operations
@@ -247,5 +285,6 @@ func (s *HostService) LoadInitialData(ctx context.Context, cfg *config.AppConfig
 	}
 
 	log.Println("Initial data loaded from config using services")
-	return nil
+	// После загрузки всех хостов выбираем мастера
+	return s.electMasterHost(ctx)
 }
