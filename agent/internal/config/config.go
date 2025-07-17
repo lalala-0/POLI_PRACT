@@ -2,13 +2,14 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"time"
-	
+
 	"gopkg.in/yaml.v3"
 )
 
 type AgentConfig struct {
-	HostID        string        `yaml:"host_id"`
+	HostID        int           `yaml:"host_id"`
 	ServerAddress string        `yaml:"server_address"`
 	PollInterval  time.Duration `yaml:"poll_interval"`
 	Port          string        `yaml:"port"`
@@ -30,8 +31,10 @@ func LoadAgentConfig(path string) (*AgentConfig, error) {
 	}
 
 	// Переопределение из переменных окружения
-	if hostID := os.Getenv("HOST_ID"); hostID != "" {
-		cfg.HostID = hostID
+	if hostIDStr := os.Getenv("HOST_ID"); hostIDStr != "" {
+		if hostID, err := strconv.Atoi(hostIDStr); err == nil {
+			cfg.HostID = hostID
+		}
 	}
 	if serverAddr := os.Getenv("SERVER_ADDRESS"); serverAddr != "" {
 		cfg.ServerAddress = serverAddr
@@ -44,7 +47,7 @@ func LoadAgentConfig(path string) (*AgentConfig, error) {
 	if port := os.Getenv("PORT"); port != "" {
 		cfg.Port = port
 	}
-	
+
 	// Установка значений по умолчанию, если не заданы
 	if cfg.PollInterval == 0 {
 		cfg.PollInterval = 60 * time.Second

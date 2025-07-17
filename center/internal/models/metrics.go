@@ -3,10 +3,18 @@ package models
 import "time"
 
 type Metrics struct {
-	ContainersInfo []ContainerInfo `yaml:"containers"`
-	HostID         int             `json:"host_id" bson:"host_id"`
-	PortsInfo      []PortInfo      `yaml:"ports"`
-	ProcessesInfo  []ProcessInfo   `yaml:"processes"`
-	SystemMetrics  SystemDetails   `yaml:"system"`
-	Timestamp      time.Time       `bson:"timestamp"`
+	HostID         int             `json:"host_id"`
+	Timestamp      time.Time       `json:"timestamp"`
+	SystemMetrics  SystemDetails   `json:"system,omitempty"`
+	ProcessesInfo  []ProcessInfo   `json:"processes,omitempty"`
+	PortsInfo      []PortInfo      `json:"ports,omitempty"`
+	ContainersInfo []ContainerInfo `json:"containers,omitempty"`
+}
+
+// HostMetricsResponse представляет все метрики хоста за период времени
+type HostMetricsResponse struct {
+	System     []SystemMetrics    `json:"system"`
+	Processes  []ProcessMetrics   `json:"processes"`
+	Containers []ContainerMetrics `json:"containers"`
+	Network    []NetworkMetrics   `json:"network"`
 }

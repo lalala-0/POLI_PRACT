@@ -55,11 +55,12 @@ logging:
 
 initial_data:
   hosts:
-    - hostname: "host-12345"
-      ip_address: "127.0.0.1"
+    - hostname: "12345"
+      ip_address: 192.168.58.129
       agent_port: 8081
       priority: 10
       is_master: true
+      status: "active"
       processes:
         - "nginx"
         - "postgres"
@@ -76,7 +77,6 @@ initial_data:
           threshold_value: 85.0
           condition: ">"
           enabled: true
-
 #    - hostname: "server-2"
 #      ip_address: "192.168.1.102"
 #      agent_port: 8081

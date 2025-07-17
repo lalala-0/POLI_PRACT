@@ -4,14 +4,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 // Handler структура для группировки обработчиков
 type Handler struct {
-	HostHandler     *HostHandler
-	MetricHandler   *MetricHandler
-	ProcessHandler  *ProcessHandler
+	HostHandler      *HostHandler
+	MetricHandler    *MetricHandler
+	ProcessHandler   *ProcessHandler
 	ContainerHandler *ContainerHandler
-	AlertHandler    *AlertHandler
+	AlertHandler     *AlertHandler
 }
 
 func SetupRoutes(router *gin.Engine, handler *Handler) {
@@ -50,7 +49,8 @@ func SetupRoutes(router *gin.Engine, handler *Handler) {
 		// Метрики
 		metrics := api.Group("/metrics")
 		{
-			metrics.POST("", handler.MetricHandler.ReceiveMetrics)
+			metrics.GET("", handler.MetricHandler.GetMetrics)
+			metrics.GET("/:host_id", handler.MetricHandler.GetHostMetrics)
 			metrics.GET("/:host_id/system", handler.MetricHandler.GetSystemMetrics)
 			metrics.GET("/:host_id/processes", handler.MetricHandler.GetProcessMetrics)
 			metrics.GET("/:host_id/containers", handler.MetricHandler.GetContainerMetrics)

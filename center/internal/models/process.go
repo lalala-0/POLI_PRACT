@@ -23,9 +23,9 @@ type ProcessMetrics struct {
 
 // ProcessInfo представляет информацию о процессе
 type ProcessInfo struct {
-	Name       string  `json:"name" bson:"name"`
-	PID        int     `json:"pid" bson:"pid"`
-	Status     string  `json:"status" bson:"status"`
+	Name string `json:"name" bson:"name"`
+	PID  int    `json:"pid" bson:"pid"`
+	//Status     string  `json:"status" bson:"status"`
 	CPUPercent float64 `json:"cpu_percent" bson:"cpu_percent"`
 	MemoryMB   float64 `json:"memory_mb" bson:"memory_mb"`
 }

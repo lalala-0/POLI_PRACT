@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"center/internal/models"
-	
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -48,7 +48,7 @@ func (r *MongoMetricRepository) GetLastSystemMetrics(ctx context.Context, hostID
 	collection := r.db.Collection("system_metrics")
 	filter := bson.M{"host_id": hostID}
 	opts := options.FindOne().SetSort(bson.D{{Key: "timestamp", Value: -1}})
-	
+
 	var metrics models.SystemMetrics
 	err := collection.FindOne(ctx, filter, opts).Decode(&metrics)
 	if err == mongo.ErrNoDocuments {
@@ -67,18 +67,18 @@ func (r *MongoMetricRepository) GetSystemMetricsInRange(ctx context.Context, hos
 		},
 	}
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}})
-	
+
 	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
-	
+
 	var metrics []models.SystemMetrics
 	if err := cursor.All(ctx, &metrics); err != nil {
 		return nil, err
 	}
-	
+
 	return metrics, nil
 }
 
@@ -92,18 +92,18 @@ func (r *MongoMetricRepository) GetProcessMetricsInRange(ctx context.Context, ho
 		},
 	}
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}})
-	
+
 	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
-	
+
 	var metrics []models.ProcessMetrics
 	if err := cursor.All(ctx, &metrics); err != nil {
 		return nil, err
 	}
-	
+
 	return metrics, nil
 }
 
@@ -117,18 +117,18 @@ func (r *MongoMetricRepository) GetContainerMetricsInRange(ctx context.Context, 
 		},
 	}
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}})
-	
+
 	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
-	
+
 	var metrics []models.ContainerMetrics
 	if err := cursor.All(ctx, &metrics); err != nil {
 		return nil, err
 	}
-	
+
 	return metrics, nil
 }
 
@@ -142,18 +142,18 @@ func (r *MongoMetricRepository) GetNetworkMetricsInRange(ctx context.Context, ho
 		},
 	}
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}})
-	
+
 	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
-	
+
 	var metrics []models.NetworkMetrics
 	if err := cursor.All(ctx, &metrics); err != nil {
 		return nil, err
 	}
-	
+
 	return metrics, nil
 }
 
@@ -170,7 +170,7 @@ func (r *MongoMetricRepository) SetupTTLIndex(ctx context.Context, collectionNam
 		Keys:    bson.M{"timestamp": 1},
 		Options: options.Index().SetExpireAfterSeconds(ttlSeconds),
 	}
-	
+
 	_, err := collection.Indexes().CreateOne(ctx, model)
 	return err
 }

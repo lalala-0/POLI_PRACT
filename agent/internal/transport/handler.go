@@ -34,6 +34,7 @@ func (s *Server) healthCheck(c *gin.Context) {
 // @Success 200 {object} models.AgentMetrics "Все метрики"
 // @Router /api/metrics [get]
 func (s *Server) getMetrics(c *gin.Context) {
+	//log.Println(s.lastMetrics)
 	c.JSON(http.StatusOK, s.lastMetrics)
 }
 

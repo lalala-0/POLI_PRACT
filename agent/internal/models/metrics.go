@@ -4,7 +4,7 @@ import "time"
 
 // AgentMetrics - корневая структура всех метрик, собираемых агентом
 type AgentMetrics struct {
-	HostID     string          `json:"host_id"`
+	HostID     int             `json:"host_id"`
 	Timestamp  time.Time       `json:"timestamp"`
 	System     SystemMetrics   `json:"system,omitempty"`
 	Processes  []ProcessInfo   `json:"processes,omitempty"`
@@ -13,7 +13,7 @@ type AgentMetrics struct {
 }
 
 // NewAgentMetrics создает новую структуру метрик с заполненным ID хоста и временной меткой
-func NewAgentMetrics(hostID string) AgentMetrics {
+func NewAgentMetrics(hostID int) AgentMetrics {
 	return AgentMetrics{
 		HostID:    hostID,
 		Timestamp: time.Now(),

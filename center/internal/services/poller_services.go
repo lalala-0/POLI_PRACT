@@ -86,7 +86,6 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 		s.updateHostStatus(ctx, host.ID, "down")
 		return
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("[%s] Unexpected status: %d", host.Hostname, resp.StatusCode)
@@ -100,6 +99,8 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 		return
 	}
 
+	//log.Printf("[%s] Metrics: %+v", host.Hostname, metrics)
+
 	// Обновляем статус хоста
 	s.updateHostStatus(ctx, host.ID, "active")
 
@@ -107,6 +108,8 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 	s.hostService.ProcessHostMetrics(ctx, host.ID, metrics)
 
 	log.Printf("[%s] Metrics collected in %v", host.Hostname, duration)
+
+	defer resp.Body.Close()
 }
 
 // updateHostStatus обновляет статус хоста в БД

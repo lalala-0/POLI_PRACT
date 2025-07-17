@@ -1,4 +1,4 @@
-host_id: "host-12345"
+host_id: 12345
 server_address: "http://monitoring-center:8080"
 poll_interval: 60s
 port: 8081
