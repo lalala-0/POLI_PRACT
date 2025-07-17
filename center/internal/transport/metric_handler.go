@@ -21,6 +21,23 @@ func NewMetricHandler(service *services.HostService) *MetricHandler {
 }
 
 // ReceiveMetrics принимает метрики от агента
+// @Summary Принять метрики от агента
+// @Description Принимает и сохраняет метрики, отправленные агентом
+// @Tags Metrics
+// @Accept json
+// @Produce json
+//
+//	@Param metrics body struct {
+//	    System     *models.SystemMetrics    `json:"system"`
+//	    Processes  *models.ProcessMetrics   `json:"processes"`
+//	    Containers *models.ContainerMetrics `json:"containers"`
+//	    Network    *models.NetworkMetrics   `json:"network"`
+//	} true "Метрики"
+//
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /metrics [post]
 func (h *MetricHandler) ReceiveMetrics(c *gin.Context) {
 	var metricsData struct {
 		System     *models.SystemMetrics    `json:"system"`
@@ -67,6 +84,16 @@ func (h *MetricHandler) ReceiveMetrics(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "metrics received"})
 }
 
+// GetSystemMetrics
+// @Summary Получить системные метрики
+// @Description Возвращает системные метрики для указанного хоста
+// @Tags Metrics
+// @Produce json
+// @Param host_id path int true "ID хоста"
+// @Success 200 {array} models.SystemMetrics
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /metrics/{host_id}/system [get]
 func (h *MetricHandler) GetSystemMetrics(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("host_id"))
 	if err != nil {
@@ -92,6 +119,18 @@ func (h *MetricHandler) GetSystemMetrics(c *gin.Context) {
 	c.JSON(http.StatusOK, metrics)
 }
 
+// GetProcessMetrics
+// @Summary Получить метрики процессов
+// @Description Возвращает метрики процессов для указанного хоста
+// @Tags Metrics
+// @Produce json
+// @Param host_id path int true "ID хоста"
+// @Param from query string false "Начало периода (RFC3339)" example("2023-01-01T00:00:00Z")
+// @Param to query string false "Конец периода (RFC3339)" example("2023-01-02T23:59:59Z")
+// @Success 200 {array} models.ProcessMetrics
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /metrics/{host_id}/processes [get]
 func (h *MetricHandler) GetProcessMetrics(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("host_id"))
 	if err != nil {
@@ -117,6 +156,18 @@ func (h *MetricHandler) GetProcessMetrics(c *gin.Context) {
 	c.JSON(http.StatusOK, metrics)
 }
 
+// GetContainerMetrics
+// @Summary Получить метрики контейнеров
+// @Description Возвращает метрики контейнеров для указанного хоста
+// @Tags Metrics
+// @Produce json
+// @Param host_id path int true "ID хоста"
+// @Param from query string false "Начало периода (RFC3339)" example("2023-01-01T00:00:00Z")
+// @Param to query string false "Конец периода (RFC3339)" example("2023-01-02T23:59:59Z")
+// @Success 200 {array} models.ContainerMetrics
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /metrics/{host_id}/containers [get]
 func (h *MetricHandler) GetContainerMetrics(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("host_id"))
 	if err != nil {
@@ -142,6 +193,18 @@ func (h *MetricHandler) GetContainerMetrics(c *gin.Context) {
 	c.JSON(http.StatusOK, metrics)
 }
 
+// GetNetworkMetrics
+// @Summary Получить сетевые метрики
+// @Description Возвращает сетевые метрики для указанного хоста
+// @Tags Metrics
+// @Produce json
+// @Param host_id path int true "ID хоста"
+// @Param from query string false "Начало периода (RFC3339)" example("2023-01-01T00:00:00Z")
+// @Param to query string false "Конец периода (RFC3339)" example("2023-01-02T23:59:59Z")
+// @Success 200 {array} models.NetworkMetrics
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /metrics/{host_id}/network [get]
 func (h *MetricHandler) GetNetworkMetrics(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("host_id"))
 	if err != nil {
@@ -168,6 +231,13 @@ func (h *MetricHandler) GetNetworkMetrics(c *gin.Context) {
 }
 
 // GetMetrics возвращает агрегированные метрики по всем хостам
+// @Summary Получить все метрики
+// @Description Возвращает агрегированные метрики по всем хостам
+// @Tags Metrics
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]string
+// @Router /metrics [get]
 func (h *MetricHandler) GetMetrics(c *gin.Context) {
 	//// Параметры диапазона времени
 	//from, to, err := parseTimeRange(c)
@@ -219,6 +289,15 @@ func (h *MetricHandler) GetMetrics(c *gin.Context) {
 }
 
 // GetHostMetrics возвращает все метрики для конкретного хоста
+// @Summary Получить метрики для хоста
+// @Description Возвращает все метрики для указанного хоста
+// @Tags Metrics
+// @Produce json
+// @Param host_id path int true "ID хоста"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /metrics/{host_id} [get]
 func (h *MetricHandler) GetHostMetrics(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("host_id"))
 	if err != nil {
@@ -271,6 +350,13 @@ func (h *MetricHandler) GetHostMetrics(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// GetHealth
+// @Summary Проверка состояния системы
+// @Description Проверяет работоспособность сервиса
+// @Tags Health
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /health [get]
 func (h *MetricHandler) GetHealth(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

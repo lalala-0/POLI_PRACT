@@ -109,12 +109,12 @@ func (s *HostService) electMasterHost(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Println("------------------------1------------------")
+	//log.Println("------------------------1------------------")
 	if len(hosts) == 0 {
 		return nil
 	}
 
-	log.Println("------------------------2------------------")
+	//log.Println("------------------------2------------------")
 	// Ищем хост с наивысшим приоритетом
 	var masterHost *models.Host
 	for _, host := range hosts {
@@ -134,7 +134,7 @@ func (s *HostService) electMasterHost(ctx context.Context) error {
 		}
 	}
 
-	log.Println("------------------------%d------------------", masterHost.ID)
+	//log.Println("------------------------------------------", masterHost.ID)
 	// Устанавливаем найденный хост как мастер
 	return s.SetMasterHost(ctx, masterHost.ID)
 }

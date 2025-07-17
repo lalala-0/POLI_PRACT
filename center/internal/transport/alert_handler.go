@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// AlertHandler обработчик оповещений
 type AlertHandler struct {
 	service *services.HostService
 }
@@ -17,7 +18,16 @@ func NewAlertHandler(service *services.HostService) *AlertHandler {
 	return &AlertHandler{service: service}
 }
 
-// Alert Handlers
+// GetAlertsByHostID
+// @Summary Получить правила оповещений для хоста
+// @Description Возвращает все правила оповещений для указанного хоста
+// @Tags Alerts
+// @Produce json
+// @Param id path int true "ID хоста"
+// @Success 200 {array} models.AlertRule
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /hosts/{id}/alerts [get]
 func (h *AlertHandler) GetAlertsByHostID(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -34,7 +44,18 @@ func (h *AlertHandler) GetAlertsByHostID(c *gin.Context) {
 	c.JSON(http.StatusOK, alerts)
 }
 
-// id - host
+// CreateAlert
+// @Summary Создать правило оповещения
+// @Description Создает новое правило оповещения для указанного хоста
+// @Tags Alerts
+// @Accept json
+// @Produce json
+// @Param id path int true "ID хоста"
+// @Param alert body models.AlertInput true "Данные правила оповещения"
+// @Success 201 {object} map[string]int "ID созданного правила"
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /hosts/{id}/alerts [post]
 func (h *AlertHandler) CreateAlert(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -58,6 +79,19 @@ func (h *AlertHandler) CreateAlert(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
+// UpdateAlert
+// @Summary Обновить правило оповещения
+// @Description Обновляет существующее правило оповещения
+// @Tags Alerts
+// @Accept json
+// @Param id path int true "ID хоста"
+// @Param alert_id path int true "ID правила оповещения"
+// @Param alert body models.AlertInput true "Обновленные данные правила"
+// @Success 204
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /hosts/{id}/alerts/{alert_id} [put]
 func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -101,6 +135,17 @@ func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// DeleteAlert
+// @Summary Удалить правило оповещения
+// @Description Удаляет правило оповещения по ID
+// @Tags Alerts
+// @Param id path int true "ID хоста"
+// @Param alert_id path int true "ID правила оповещения"
+// @Success 204
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /hosts/{id}/alerts/{alert_id} [delete]
 func (h *AlertHandler) DeleteAlert(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -133,6 +178,19 @@ func (h *AlertHandler) DeleteAlert(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// EnableDisableAlert
+// @Summary Включить/выключить правило оповещения
+// @Description Изменяет статус активности правила оповещения
+// @Tags Alerts
+// @Accept json
+// @Param id path int true "ID хоста"
+// @Param alert_id path int true "ID правила оповещения"
+// @Param status body object{enabled=bool} true "Статус активности"
+// @Success 204
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /hosts/{id}/alerts/{alert_id}/status [patch]
 func (h *AlertHandler) EnableDisableAlert(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {

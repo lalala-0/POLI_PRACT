@@ -17,7 +17,16 @@ func NewProcessHandler(service *services.HostService) *ProcessHandler {
 	return &ProcessHandler{service: service}
 }
 
-// Process ProcessHandlers
+// GetProcessesByHostID godoc
+// @Summary Получить процессы для хоста
+// @Description Возвращает все процессы для указанного хоста
+// @Tags Processes
+// @Produce json
+// @Param id path int true "ID хоста"
+// @Success 200 {array} models.Process
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /hosts/{id}/processes [get]
 func (h *ProcessHandler) GetProcessesByHostID(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -34,6 +43,18 @@ func (h *ProcessHandler) GetProcessesByHostID(c *gin.Context) {
 	c.JSON(http.StatusOK, processes)
 }
 
+// CreateProcess
+// @Summary Добавить процесс для мониторинга
+// @Description Добавляет новый процесс для мониторинга на указанном хосте
+// @Tags Processes
+// @Accept json
+// @Produce json
+// @Param id path int true "ID хоста"
+// @Param process body models.ProcessInput true "Данные процесса"
+// @Success 201 {object} map[string]int "ID созданного процесса"
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /hosts/{id}/processes [post]
 func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -57,6 +78,16 @@ func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
+// DeleteProcess
+// @Summary Удалить процесс из мониторинга
+// @Description Удаляет процесс из списка мониторинга
+// @Tags Processes
+// @Param id path int true "ID хоста"
+// @Param process_id path int true "ID процесса"
+// @Success 204
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /hosts/{id}/processes/{process_id} [delete]
 func (h *ProcessHandler) DeleteProcess(c *gin.Context) {
 	_, err := strconv.Atoi(c.Param("id"))
 	if err != nil {

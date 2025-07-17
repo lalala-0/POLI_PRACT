@@ -17,7 +17,16 @@ func NewContainerHandler(service *services.HostService) *ContainerHandler {
 	return &ContainerHandler{service: service}
 }
 
-// Container Handlers
+// GetContainersByHostID
+// @Summary Получить контейнеры для хоста
+// @Description Возвращает все контейнеры для указанного хоста
+// @Tags Containers
+// @Produce json
+// @Param id path int true "ID хоста"
+// @Success 200 {array} models.Container
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /hosts/{id}/containers [get]
 func (h *ContainerHandler) GetContainersByHostID(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -34,6 +43,18 @@ func (h *ContainerHandler) GetContainersByHostID(c *gin.Context) {
 	c.JSON(http.StatusOK, container)
 }
 
+// CreateContainer
+// @Summary Добавить контейнер для мониторинга
+// @Description Добавляет новый контейнер для мониторинга на указанном хосте
+// @Tags Containers
+// @Accept json
+// @Produce json
+// @Param id path int true "ID хоста"
+// @Param container body models.ContainerInput true "Данные контейнера"
+// @Success 201 {object} map[string]int "ID созданного контейнера"
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /hosts/{id}/containers [post]
 func (h *ContainerHandler) CreateContainer(c *gin.Context) {
 	hostID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -57,8 +78,16 @@ func (h *ContainerHandler) CreateContainer(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
-// id - host
-// container_id - container
+// DeleteContainer
+// @Summary Удалить контейнер из мониторинга
+// @Description Удаляет контейнер из списка мониторинга
+// @Tags Containers
+// @Param id path int true "ID хоста"
+// @Param container_id path int true "ID контейнера"
+// @Success 204
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /hosts/{id}/containers/{container_id} [delete]
 func (h *ContainerHandler) DeleteContainer(c *gin.Context) {
 	_, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
