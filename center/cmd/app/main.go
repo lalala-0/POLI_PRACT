@@ -14,8 +14,12 @@ import (
 ///home/polina/Pract/POLI_PRACT/center
 
 func main() {
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "config/config.yml" // путь по умолчанию
+	}
 	// Загрузка конфигурации из переменных окружения или флагов
-	cfg, err := config.LoadConfig("/home/polina/POLI_PRACT/center/config/config.yml")
+	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}

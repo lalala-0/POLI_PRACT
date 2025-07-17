@@ -54,12 +54,12 @@ func NewApp(cfg *config.AppConfig) *App {
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
-	//defer mongoDB.Disconnect()
-	defer func() {
-		if err := mongoDB.Client.Disconnect(context.Background()); err != nil {
-			log.Printf("MongoDB disconnect error: %v", err)
-		}
-	}()
+	////defer mongoDB.Disconnect()
+	//defer func() {
+	//	if err := mongoDB.Client.Disconnect(context.Background()); err != nil {
+	//		log.Printf("MongoDB disconnect error: %v", err)
+	//	}
+	//}()
 
 	// Инициализация репозиториев
 	hostRepo := pg_repo.NewPostgresHostRepository(pgdb.DB)

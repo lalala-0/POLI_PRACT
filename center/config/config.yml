@@ -4,11 +4,11 @@ server:
   write_timeout: 30s
 
 postgres:
-  host: "postgres"
+  host: "build-postgres-1"
   port: "5432"
   user: "postgres"
   password: "password"
-  dbname: "build-postgres-1"
+  dbname: "monitoring"
   sslmode: "disable"
   driver: "postgres"
   maxOpenConns: 25
@@ -17,7 +17,7 @@ postgres:
 
 mongodb:
   uri: "mongodb://mongo:27017"
-  dbname: "build-mongodb-1"
+  dbname: "metrics"
   connectTimeout: 5s
   maxPoolSize: 20
   minPoolSize: 5
@@ -47,7 +47,7 @@ metrics:
 
 logging:
   level: "info"
-  file_path: "/var/log/monitoring.log"
+  file_path: "/app/logs/monitoring.log"
   max_size: 100
   max_backups: 5
   max_age: 30

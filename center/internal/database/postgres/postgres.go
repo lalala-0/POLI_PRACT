@@ -39,7 +39,7 @@ func InitPostgres(cfg config.PostgresConfig) error {
 	if err != nil {
 		return err
 	}
-
+	//fmt.Println("-------------------------")
 	if err = DB.Ping(); err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func generateConnectionString(cfg config.PostgresConfig) string {
 			cfg.SSLMode = "disable"
 		}
 		return fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s DBname=%s sslmode=%s",
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 			cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode)
 
 	case "pgx":
@@ -113,6 +113,7 @@ func EnsurePostgresStructure() error {
 		{Name: "id", Type: "integer", NotNull: true, PrimaryKey: true},
 		{Name: "hostname", Type: "character varying(255)", NotNull: true},
 		{Name: "ip_address", Type: "character varying(50)", NotNull: true},
+		{Name: "agent_port", Type: "integer", Default: "8081"},
 		{Name: "priority", Type: "integer", Default: "0"},
 		{Name: "is_master", Type: "boolean", Default: "false"},
 		{Name: "status", Type: "character varying(50)", Default: "'unknown'::character varying"},
@@ -201,6 +202,24 @@ func tableExists(tableName string) (bool, error) {
 	return exists, err
 }
 
+// Проверяет, является ли столбец частью первичного ключа
+func isPrimaryKeyColumn(tableName, columnName string) (bool, error) {
+	query := `
+        SELECT COUNT(*)
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+            ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+        WHERE tc.constraint_type = 'PRIMARY KEY'
+            AND tc.table_name = $1
+            AND kcu.column_name = $2
+    `
+
+	var count int
+	err := DB.QueryRow(query, tableName, columnName).Scan(&count)
+	return count > 0, err
+}
+
 // Проверяет структуру таблицы
 func verifyTableStructure(tableName string, columns []ColumnDefinition) error {
 	for _, expected := range columns {
@@ -223,13 +242,29 @@ func verifyTableStructure(tableName string, columns []ColumnDefinition) error {
 
 		// Проверяем значение по умолчанию (если указано)
 		if expected.Default != "" {
+			// Обрабатываем случай, когда значение по умолчанию NULL
+			if !actual.ColumnDefault.Valid {
+				return fmt.Errorf("default value mismatch for %s.%s: expected '%s', got NULL",
+					tableName, expected.Name, expected.Default)
+			}
+
 			// Нормализуем значения по умолчанию
 			normalizedExpected := strings.ToLower(strings.TrimSpace(expected.Default))
-			normalizedActual := strings.ToLower(strings.TrimSpace(actual.ColumnDefault))
+			normalizedActual := strings.ToLower(strings.TrimSpace(actual.ColumnDefault.String))
 
 			if normalizedActual != normalizedExpected {
 				return fmt.Errorf("default value mismatch for %s.%s: expected '%s', got '%s'",
 					tableName, expected.Name, normalizedExpected, normalizedActual)
+			}
+		}
+		// Проверка первичного ключа
+		if expected.PrimaryKey {
+			isPK, err := isPrimaryKeyColumn(tableName, expected.Name)
+			if err != nil {
+				return fmt.Errorf("error checking PK for %s.%s: %w", tableName, expected.Name, err)
+			}
+			if !isPK {
+				return fmt.Errorf("column %s.%s should be primary key", tableName, expected.Name)
 			}
 		}
 	}
@@ -241,7 +276,7 @@ type ColumnInfo struct {
 	ColumnName    string
 	DataType      string
 	IsNullable    string
-	ColumnDefault string
+	ColumnDefault sql.NullString
 }
 
 // getColumnInfo возвращает информацию о столбце

@@ -1,15 +1,20 @@
-version: '3.8'
+#version: '3.8'
 
 services:
   # Центр мониторинга
   monitoring-center:
-    build: ..
+    build:
+      context: ..
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
-      - mongodb
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
     environment:
+      - CONFIG_PATH=/center/config/config.yml
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
@@ -18,24 +23,34 @@ services:
       - MONGO_URI=mongodb://mongodb:27017
       - MONGO_DB=metrics
     volumes:
-      - ./logs:/app/logs
-    restart: always
+      - monitoring-logs:/center/logs
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped #always
 
   # PostgreSQL для хранения конфигурации хостов
   postgres:
-    image: postgres:14-alpine
+    image: postgres:14
     environment:
       - POSTGRES_PASSWORD=password
       - POSTGRES_USER=postgres
       - POSTGRES_DB=monitoring
-      - LANG=en_US.utf8
-      - LC_ALL=en_US.utf8
+      - LANG=en_US.UTF-8
+      - LC_ALL=en_US.UTF-8
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ../internal/database/postgres/init:/docker-entrypoint-initdb.d
-    restart: always
+      - ./init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
 
   # MongoDB для хранения метрик
   mongodb:
@@ -44,8 +59,15 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
-    restart: always
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
 
 volumes:
   postgres_data:
   mongo_data:
+  monitoring-logs:
