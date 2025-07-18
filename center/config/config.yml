@@ -53,6 +53,23 @@ logging:
   max_age: 30
   compress: true
 
+alerts:
+  telegram:
+    token: "<YOUR_BOT_TOKEN>"
+    chat_id: "<CHAT_ID>"
+
+  email:
+    to:
+      - "admin1@example.com"
+      - "admin2@example.com"
+    smtp_host: "smtp.example.com"
+    smtp_port: 587
+    username: "your_email@example.com"
+    password: "email_password"
+
+  failure_threshold_percent: 90
+  interval_seconds: 60
+
 initial_data:
   hosts:
     - hostname: "12345"
@@ -68,22 +85,3 @@ initial_data:
       containers:
         - "build-mongodb-1"
         - "build-postgres-1"
-      alerts:
-        - metric_name: "cpu_usage_percent"
-          threshold_value: 90.0
-          condition: ">"
-          enabled: true
-        - metric_name: "memory_usage_percent"
-          threshold_value: 85.0
-          condition: ">"
-          enabled: true
-#    - hostname: "server-2"
-#      ip_address: "192.168.1.102"
-#      agent_port: 8081
-#      priority: 5
-#      is_master: false
-#      processes:
-#        - "nginx"
-#        - "redis"
-#      containers:
-#        - "cache-redis"

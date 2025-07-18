@@ -270,18 +270,7 @@ func (s *HostService) LoadInitialData(ctx context.Context, cfg *config.AppConfig
 				log.Printf("Failed to add container %s to host %s: %v", container, hostCfg.Hostname, err)
 			}
 		}
-
-		// Добавление правил оповещений
-		for _, alert := range hostCfg.Alerts {
-			if _, err := s.CreateAlertRule(ctx, hostID, models.AlertInput{
-				MetricName:     alert.MetricName,
-				ThresholdValue: alert.Threshold,
-				Condition:      alert.Condition,
-				Enabled:        alert.Enabled,
-			}); err != nil {
-				log.Printf("Failed to add alert for %s to host %s: %v", alert.MetricName, hostCfg.Hostname, err)
-			}
-		}
+		
 	}
 
 	log.Println("Initial data loaded from config using services")

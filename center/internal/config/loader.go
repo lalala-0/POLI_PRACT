@@ -1,18 +1,20 @@
 package config
 
 import (
+	"center/internal/models"
 	"gopkg.in/yaml.v3"
 	"os"
 	"time"
 )
 
 type AppConfig struct {
-	Server      ServerConfig      `yaml:"server"`
-	Postgres    PostgresConfig    `yaml:"postgres"`
-	MongoDB     MongoDBConfig     `yaml:"mongodb"`
-	Metrics     MetricsConfig     `yaml:"metrics"`
-	Logging     LoggingConfig     `yaml:"logging"`
-	InitialData InitialDataConfig `yaml:"initial_data"`
+	Server      models.ServerConfig      `yaml:"server"`
+	Postgres    models.PostgresConfig    `yaml:"postgres"`
+	MongoDB     models.MongoDBConfig     `yaml:"mongodb"`
+	Metrics     models.MetricsConfig     `yaml:"metrics"`
+	Logging     models.LoggingConfig     `yaml:"logging"`
+	Alerts      models.AlertConfig       `yaml:"alerts"`
+	InitialData models.InitialDataConfig `yaml:"initial_data"`
 }
 
 func LoadConfig(path string) (*AppConfig, error) {

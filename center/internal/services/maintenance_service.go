@@ -1,9 +1,9 @@
 package services
 
 import (
-	"center/internal/config"
 	"center/internal/database/mongodb/repositories"
 	pg_repo "center/internal/database/postgres/repositories"
+	"center/internal/models"
 	"context"
 	"log"
 
@@ -14,13 +14,13 @@ import (
 type MaintenanceService struct {
 	metricRepo repositories.MongoMetricRepository
 	hostRepo   pg_repo.PostgresHostRepository
-	config     config.MetricsConfig
+	config     models.MetricsConfig
 }
 
 func NewMaintenanceService(
 	metricRepo repositories.MongoMetricRepository,
 	hostRepo pg_repo.PostgresHostRepository,
-	config config.MetricsConfig,
+	config models.MetricsConfig,
 ) *MaintenanceService {
 	return &MaintenanceService{
 		metricRepo: metricRepo,

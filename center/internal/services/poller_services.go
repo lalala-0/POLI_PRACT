@@ -13,19 +13,26 @@ import (
 
 // PollerService отвечает за периодический опрос агентов
 type PollerService struct {
-	hostService *HostService
-	interval    time.Duration
-	httpClient  *http.Client
+	hostService  *HostService
+	interval     time.Duration
+	httpClient   *http.Client
+	alertService *AlertNotifierService
 	//logger      *log.Logger
 }
 
-func NewPollerService(hostService *HostService, interval time.Duration) *PollerService {
+type pollResult struct {
+	Timestamp time.Time
+	Success   bool
+}
+
+func NewPollerService(hostService *HostService, interval time.Duration, alertService *AlertNotifierService) *PollerService {
 	return &PollerService{
 		hostService: hostService,
 		interval:    interval,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
+		alertService: alertService,
 		//logger: logger,
 	}
 }
@@ -33,6 +40,7 @@ func NewPollerService(hostService *HostService, interval time.Duration) *PollerS
 // Start запускает процесс опроса хостов
 func (s *PollerService) Start(ctx context.Context) {
 	log.Println("Starting poller service...")
+	go s.alertService.alertMonitor(ctx)
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
 
@@ -74,6 +82,7 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 	if err != nil {
 		log.Printf("[%s] Error creating request: %v", host.Hostname, err)
 		s.updateHostStatus(ctx, host.ID, "error")
+		s.alertService.recordPollResult(host.ID, false)
 		return
 	}
 
@@ -84,18 +93,21 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 	if err != nil {
 		log.Printf("[%s] Polling error: %v", host.Hostname, err)
 		s.updateHostStatus(ctx, host.ID, "down")
+		s.alertService.recordPollResult(host.ID, false)
 		return
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("[%s] Unexpected status: %d", host.Hostname, resp.StatusCode)
 		s.updateHostStatus(ctx, host.ID, "unstable")
+		s.alertService.recordPollResult(host.ID, false)
 		return
 	}
 
 	var metrics models.Metrics
 	if err := json.NewDecoder(resp.Body).Decode(&metrics); err != nil {
 		log.Printf("[%s] Error decoding metrics: %v", host.Hostname, err)
+		s.alertService.recordPollResult(host.ID, false)
 		return
 	}
 
@@ -108,6 +120,7 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 	s.hostService.ProcessHostMetrics(ctx, host.ID, metrics)
 
 	log.Printf("[%s] Metrics collected in %v", host.Hostname, duration)
+	s.alertService.recordPollResult(host.ID, true)
 
 	defer resp.Body.Close()
 }

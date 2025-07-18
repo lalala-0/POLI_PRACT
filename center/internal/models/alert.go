@@ -4,12 +4,14 @@ import "time"
 
 // AlertRule представляет правило для генерации уведомлений
 type AlertRule struct {
-	ID             int     `json:"id" db:"id"`
-	HostID         int     `json:"host_id" db:"host_id"`
-	MetricName     string  `json:"metric_name" binding:"required" db:"metric_name"`
-	ThresholdValue float64 `json:"threshold_value" binding:"required" db:"threshold_value"`
-	Condition      string  `json:"condition" binding:"required" db:"condition"` // "greater", "less", "equal"
-	Enabled        bool    `json:"enabled" db:"enabled"`
+	ID                int     `json:"id" db:"id"`
+	HostID            int     `json:"host_id" db:"host_id"`
+	MetricName        string  `json:"metric_name" binding:"required" db:"metric_name"`
+	ThresholdValue    float64 `json:"threshold_value" binding:"required" db:"threshold_value"`
+	Condition         string  `json:"condition" binding:"required" db:"condition"` // "greater", "less", "equal"
+	Enabled           bool    `json:"enabled" db:"enabled"`
+	TimeWindowSeconds int     `json:"time_window_seconds" db:"time_window_seconds"` // Например, 60
+	FailPercent       float64 `json:"fail_percent" db:"fail_percent"`
 }
 
 // AlertInput представляет данные для создания правила оповещения
