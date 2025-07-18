@@ -77,13 +77,13 @@ initial_data:
           threshold_value: 85.0
           condition: ">"
           enabled: true
-#    - hostname: "server-2"
-#      ip_address: "192.168.1.102"
-#      agent_port: 8081
-#      priority: 5
-#      is_master: false
-#      processes:
-#        - "nginx"
-#        - "redis"
-#      containers:
-#        - "cache-redis"
+    - hostname: "server-2"
+      ip_address: "192.168.1.102"
+      agent_port: 8081
+      priority: 5
+      is_master: false
+      processes:
+        - "nginx"
+        - "redis"
+      containers:
+        - "cache-redis"

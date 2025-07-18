@@ -1,8 +1,3 @@
-# TODO
-
-- написать конфиг и его парсер (порт агента, интервал сбора метрик, ?id хоста?)
-- исправить ошибки в сборщике инфы докера и сетевых портов
-
 # Как сие работает? Работа агента мониторинга с двумя горутинами
 
 Агент мониторинга построен на взаимодействии двух горутин, которые разделяют между собой конфигурацию и метрики:
@@ -95,46 +90,76 @@
 
 `curl http://localhost:8080/`
 
-1. Создайте специального пользователя для агента
-bash
+
+
+# Как добавить в автозапуск через systemctl
+
+1. Настроить users и groups
+```bash
+./build/set_agent_user.sh
+```
+Или
+
+1.1. Создание специального пользователя для агента
+```bash
 sudo useradd --system --no-create-home --shell /bin/false agentuser
-2. Добавьте пользователя в группу docker
-bash
+```
+1.2. Добавление пользователя в группу docker
+```bash
 sudo usermod -aG docker agentuser
-3. Измените права на файлы
-bash
+```
+1.3. Изменение прав на файлы
+```bash
 sudo chown -R agentuser:docker /bin/agent
 sudo chmod 750 /bin/agent/main
 sudo chown -R agentuser:docker /etc/agent
 sudo chmod 640 /etc/agent/config.yml
+```
 
+2. Компилируем бинарник
+```bash
+./build/build_agent.sh
+```
+Или `go build ./cmd/main.go`
 
-# Как добавить в автозапуск через systemctl
-1. Компилируем бинарник.
-- переходим в папку с проектом
-- создаем экзешник: `go build ./cmd/main.go`
+3. Запуск агента как юнита system
+```bash
+./build/build_agent.sh
+```
+Или 
 
-2. Распределяем необходимые файлы по директориям
+3.1. Или распределяем необходимые файлы по директориям
 - Создаем директорию `sudo mkdir -p /etc/agent`
 - Конфиг config.yaml добавляем в папку /etc/agent `sudo cp ./config/config.yml /etc/agent/`
 - Создаем директорию `sudo mkdir -p /bin/agent`
 - Бинарник main.exe добавляем в папку /bin/agent `sudo cp ./main /bin/agent/`
 
-3. Создаём agent.service
+3.2. Создаём agent.service
 - копируем юнит-файл `sudo cp ./deployments/agent.service /etc/systemd/system/`
 
-4. Перезапускаем systemd
+3.3. Перезапускаем systemd
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable agent.service
 sudo systemctl start agent.service
-```
-
-5. Проверка
-```bash
 sudo systemctl status agent.service
-journalctl -u agent.service -f
 ```
 
+4. Просмотр журнала
+```bash
+./build/journal.sh	
+```
+Или `journalctl -u agent.service -f`
 
 
+5 Завершение работы агента
+```bash
+./build/stop_systemd_agent.sh
+```
+Или
+
+```bash
+sudo systemctl stop agent.service
+sudo systemctl disable agent.service
+sudo systemctl status agent.service
+```
