@@ -126,8 +126,6 @@ func (h *MetricHandler) GetSystemMetrics(c *gin.Context) {
 // @Tags Metrics
 // @Produce json
 // @Param host_id path int true "ID хоста"
-// @Param from query string false "Начало периода (RFC3339)" example("2023-01-01T00:00:00Z")
-// @Param to query string false "Конец периода (RFC3339)" example("2023-01-02T23:59:59Z")
 // @Success 200 {array} models.ProcessMetrics
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -163,8 +161,6 @@ func (h *MetricHandler) GetProcessMetrics(c *gin.Context) {
 // @Tags Metrics
 // @Produce json
 // @Param host_id path int true "ID хоста"
-// @Param from query string false "Начало периода (RFC3339)" example("2023-01-01T00:00:00Z")
-// @Param to query string false "Конец периода (RFC3339)" example("2023-01-02T23:59:59Z")
 // @Success 200 {array} models.ContainerMetrics
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -200,8 +196,6 @@ func (h *MetricHandler) GetContainerMetrics(c *gin.Context) {
 // @Tags Metrics
 // @Produce json
 // @Param host_id path int true "ID хоста"
-// @Param from query string false "Начало периода (RFC3339)" example("2023-01-01T00:00:00Z")
-// @Param to query string false "Конец периода (RFC3339)" example("2023-01-02T23:59:59Z")
 // @Success 200 {array} models.NetworkMetrics
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string

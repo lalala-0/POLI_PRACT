@@ -1096,20 +1096,6 @@
                         "name": "host_id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"2023-01-01T00:00:00Z\"",
-                        "description": "Начало периода (RFC3339)",
-                        "name": "from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"2023-01-02T23:59:59Z\"",
-                        "description": "Конец периода (RFC3339)",
-                        "name": "to",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1160,20 +1146,6 @@
                         "name": "host_id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"2023-01-01T00:00:00Z\"",
-                        "description": "Начало периода (RFC3339)",
-                        "name": "from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"2023-01-02T23:59:59Z\"",
-                        "description": "Конец периода (RFC3339)",
-                        "name": "to",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1224,20 +1196,6 @@
                         "name": "host_id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"2023-01-01T00:00:00Z\"",
-                        "description": "Начало периода (RFC3339)",
-                        "name": "from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"2023-01-02T23:59:59Z\"",
-                        "description": "Конец периода (RFC3339)",
-                        "name": "to",
-                        "in": "query"
                     }
                 ],
                 "responses": {
