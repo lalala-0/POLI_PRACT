@@ -74,7 +74,14 @@ func (h *ProcessHandler) CreateProcess(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
+	host, err := h.service.GetHost(ctx, hostID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	if err = h.service.SendProcessConfigurationToAgent(ctx, *host); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 

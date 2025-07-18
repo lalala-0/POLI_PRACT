@@ -75,6 +75,15 @@ func (h *ContainerHandler) CreateContainer(c *gin.Context) {
 		return
 	}
 
+	host, err := h.service.GetHost(ctx, hostID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	if err = h.service.SendContainerConfigurationToAgent(ctx, *host); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 

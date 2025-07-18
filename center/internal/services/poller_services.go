@@ -184,6 +184,14 @@ func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metric
 
 // SendConfigurationToAgent отправляет конфигурацию на агент
 func (s *HostService) SendConfigurationToAgent(ctx context.Context, host models.Host) error {
+	if err := s.SendProcessConfigurationToAgent(ctx, host); err != nil {
+		return err
+	}
+	return s.SendContainerConfigurationToAgent(ctx, host)
+}
+
+// SendProcessConfigurationToAgent отправляет конфигурацию process на агент
+func (s *HostService) SendProcessConfigurationToAgent(ctx context.Context, host models.Host) error {
 	// Отправка конфигурации процессов
 	processes, err := s.ProcessRepo.GetByHostID(ctx, host.ID)
 	if err != nil {
@@ -195,12 +203,13 @@ func (s *HostService) SendConfigurationToAgent(ctx context.Context, host models.
 		processNames = append(processNames, p.ProcessName)
 	}
 
-	if err := s.sendToAgent(ctx, host, "/config/processes", map[string]interface{}{
+	return s.sendToAgent(ctx, host, "/config/processes", map[string]interface{}{
 		"processes": processNames,
-	}); err != nil {
-		return err
-	}
+	})
+}
 
+// SendContainerConfigurationToAgent отправляет конфигурацию container на агент
+func (s *HostService) SendContainerConfigurationToAgent(ctx context.Context, host models.Host) error {
 	// Отправка конфигурации контейнеров
 	containers, err := s.ContainerRepo.GetByHostID(ctx, host.ID)
 	if err != nil {

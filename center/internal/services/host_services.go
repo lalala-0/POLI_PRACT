@@ -270,7 +270,7 @@ func (s *HostService) LoadInitialData(ctx context.Context, cfg *config.AppConfig
 				log.Printf("Failed to add container %s to host %s: %v", container, hostCfg.Hostname, err)
 			}
 		}
-		
+
 	}
 
 	log.Println("Initial data loaded from config using services")

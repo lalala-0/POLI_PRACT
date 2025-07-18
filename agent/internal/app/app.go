@@ -1,7 +1,7 @@
 package app
 
 import (
-	coll "agent/internal/collectors"
+	//coll "agent/internal/collectors"
 	"agent/internal/config"
 	"agent/internal/models"
 	service "agent/internal/services"
@@ -13,30 +13,31 @@ import (
 )
 
 type App struct {
-	cfg            *config.AgentConfig
-	collectors     []coll.Collector
+	cfg    *config.AgentConfig
+	server *transport.Server
+	//collectors     []coll.Collector
 	metricsService *service.MetricsService
 }
 
 func NewApp(cfg *config.AgentConfig) *App {
 
-	// Инициализация коллекторов
-	collectors := []coll.Collector{
-		coll.NewSystemCollector(),
-		coll.NewProcessCollector(cfg.Processes),
-		coll.NewNetworkCollector(),
-	}
+	//// Инициализация коллекторов
+	//collectors := []coll.Collector{
+	//	coll.NewSystemCollector(),
+	//	coll.NewProcessCollector(cfg.Processes),
+	//	coll.NewNetworkCollector(),
+	//}
+	//
+	//// Docker коллектор добавляем, если он доступен
+	//if dockerCollector, err := coll.NewDockerCollector(cfg.Containers); err == nil {
+	//	collectors = append(collectors, dockerCollector)
+	//}
 
-	// Docker коллектор добавляем, если он доступен
-	if dockerCollector, err := coll.NewDockerCollector(cfg.Containers); err == nil {
-		collectors = append(collectors, dockerCollector)
-	}
-
-	metricsService := service.NewMetricsService()
+	metricsService := service.NewMetricsService(cfg)
 
 	return &App{
-		cfg:            cfg,
-		collectors:     collectors,
+		cfg: cfg,
+		//collectors:     collectors,
 		metricsService: metricsService,
 	}
 }
@@ -50,8 +51,8 @@ func (a *App) Run(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 
-		server := transport.NewServer(a.cfg.Port, metricsCh, a.metricsService)
-		server.Start(ctx)
+		a.server = transport.NewServer(a.cfg.Port, metricsCh, a.metricsService)
+		a.server.Start(ctx)
 	}()
 
 	// Горутина 2: Сбор метрик
@@ -70,7 +71,7 @@ func (a *App) Run(ctx context.Context, wg *sync.WaitGroup) {
 				// Сбор метрик от всех коллекторов
 				metrics := models.NewAgentMetrics(a.cfg.HostID)
 
-				for _, c := range a.collectors {
+				for _, c := range a.metricsService.Collectors {
 					if err := c.Collect(&metrics); err != nil {
 						log.Printf("Collection error: %v", err)
 					}

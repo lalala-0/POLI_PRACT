@@ -1,6 +1,8 @@
 package service
 
 import (
+	coll "agent/internal/collectors"
+	"agent/internal/config"
 	"agent/internal/models"
 	"sync"
 	"time"
@@ -21,6 +23,7 @@ type MetricsServiceInterface interface {
 type MetricsService struct {
 	processConfig      []string
 	containerConfig    []string
+	Collectors         []coll.Collector
 	collectionInterval time.Duration
 	mu                 sync.RWMutex
 	processConfigSet   bool
@@ -28,10 +31,22 @@ type MetricsService struct {
 }
 
 // NewMetricsService создает новый сервис метрик
-func NewMetricsService() *MetricsService {
+func NewMetricsService(cfg *config.AgentConfig) *MetricsService {
+	// Инициализация коллекторов
+	Collectors := []coll.Collector{
+		coll.NewSystemCollector(),
+		coll.NewProcessCollector(cfg.Processes),
+		coll.NewNetworkCollector(),
+	}
+
+	// Docker коллектор добавляем, если он доступен
+	if dockerCollector, err := coll.NewDockerCollector(cfg.Containers); err == nil {
+		Collectors = append(Collectors, dockerCollector)
+	}
 	return &MetricsService{
 		processConfig:      []string{},
 		containerConfig:    []string{},
+		Collectors:         Collectors,
 		processConfigSet:   false,
 		containerConfigSet: false,
 	}
@@ -41,7 +56,10 @@ func NewMetricsService() *MetricsService {
 func (s *MetricsService) UpdateProcessConfig(processes []string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.processConfig = processes
+	for _, process := range processes {
+		s.processConfig = append(s.processConfig, process)
+	}
+	s.Collectors = append(s.Collectors, coll.NewProcessCollector(processes))
 	s.processConfigSet = true
 	return nil
 }
@@ -64,7 +82,14 @@ func (s *MetricsService) IsProcessConfigSet() bool {
 func (s *MetricsService) UpdateContainerConfig(containers []string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.containerConfig = containers
+	for _, container := range containers {
+		s.containerConfig = append(s.containerConfig, container)
+	}
+	dcoll, err := coll.NewDockerCollector(containers)
+	if err != nil {
+		return err
+	}
+	s.Collectors = append(s.Collectors, dcoll)
 	s.containerConfigSet = true
 	return nil
 }
