@@ -1,0 +1,1128 @@
+basePath: /api/
+definitions:
+  models.AlertInput:
+    properties:
+      condition:
+        type: string
+      enabled:
+        type: boolean
+      metric_name:
+        type: string
+      threshold_value:
+        type: number
+    required:
+    - condition
+    - metric_name
+    - threshold_value
+    type: object
+  models.AlertRule:
+    properties:
+      condition:
+        description: '"greater", "less", "equal"'
+        type: string
+      enabled:
+        type: boolean
+      host_id:
+        type: integer
+      id:
+        type: integer
+      metric_name:
+        type: string
+      threshold_value:
+        type: number
+    required:
+    - condition
+    - metric_name
+    - threshold_value
+    type: object
+  models.CPUInfo:
+    properties:
+      usage_percent:
+        type: number
+    type: object
+  models.Container:
+    properties:
+      container_name:
+        type: string
+      host_id:
+        type: integer
+      id:
+        type: integer
+    required:
+    - container_name
+    type: object
+  models.ContainerInfo:
+    properties:
+      cpu_percent:
+        type: number
+      id:
+        type: string
+      image:
+        type: string
+      mem_percent:
+        type: number
+      name:
+        type: string
+      status:
+        type: string
+    type: object
+  models.ContainerInput:
+    properties:
+      container_name:
+        type: string
+    required:
+    - container_name
+    type: object
+  models.ContainerMetrics:
+    properties:
+      containers:
+        items:
+          $ref: '#/definitions/models.ContainerInfo'
+        type: array
+      host_id:
+        type: integer
+      timestamp:
+        type: string
+    type: object
+  models.DiskInfo:
+    properties:
+      free:
+        type: integer
+      total:
+        type: integer
+      usage_percent:
+        type: number
+      used:
+        type: integer
+    type: object
+  models.Host:
+    properties:
+      agent_port:
+        type: integer
+      created_at:
+        description: LastCheck time.Time `json:"last_check" db:"last_check"`
+        type: string
+      hostname:
+        type: string
+      id:
+        type: integer
+      ip_address:
+        type: string
+      is_master:
+        type: boolean
+      priority:
+        type: integer
+      status:
+        type: string
+      updated_at:
+        type: string
+    required:
+    - hostname
+    - ip_address
+    type: object
+  models.HostInput:
+    properties:
+      agent_port:
+        type: integer
+      hostname:
+        type: string
+      ip_address:
+        type: string
+      priority:
+        type: integer
+    required:
+    - agent_port
+    - hostname
+    - ip_address
+    type: object
+  models.HostMetricsResponse:
+    properties:
+      containers:
+        items:
+          $ref: '#/definitions/models.ContainerMetrics'
+        type: array
+      network:
+        items:
+          $ref: '#/definitions/models.NetworkMetrics'
+        type: array
+      processes:
+        items:
+          $ref: '#/definitions/models.ProcessMetrics'
+        type: array
+      system:
+        items:
+          $ref: '#/definitions/models.SystemMetrics'
+        type: array
+    type: object
+  models.NetworkMetrics:
+    properties:
+      host_id:
+        type: integer
+      ports:
+        items:
+          $ref: '#/definitions/models.PortInfo'
+        type: array
+      timestamp:
+        type: string
+    type: object
+  models.PortInfo:
+    properties:
+      local_port:
+        type: integer
+      process:
+        type: string
+      protocol:
+        type: string
+      state:
+        type: string
+    type: object
+  models.Process:
+    properties:
+      host_id:
+        type: integer
+      id:
+        type: integer
+      process_name:
+        type: string
+    required:
+    - process_name
+    type: object
+  models.ProcessInfo:
+    properties:
+      cpu_percent:
+        description: Status     string  `json:"status" bson:"status"`
+        type: number
+      memory_mb:
+        type: number
+      name:
+        type: string
+      pid:
+        type: integer
+    type: object
+  models.ProcessInput:
+    properties:
+      process_name:
+        type: string
+    required:
+    - process_name
+    type: object
+  models.ProcessMetrics:
+    properties:
+      host_id:
+        type: integer
+      processes:
+        items:
+          $ref: '#/definitions/models.ProcessInfo'
+        type: array
+      timestamp:
+        type: string
+    type: object
+  models.RAMInfo:
+    properties:
+      free:
+        type: integer
+      total:
+        type: integer
+      usage_percent:
+        type: number
+      used:
+        type: integer
+    type: object
+  models.SystemDetails:
+    properties:
+      cpu:
+        $ref: '#/definitions/models.CPUInfo'
+      disk:
+        $ref: '#/definitions/models.DiskInfo'
+      ram:
+        $ref: '#/definitions/models.RAMInfo'
+    type: object
+  models.SystemMetrics:
+    properties:
+      host_id:
+        type: integer
+      system:
+        $ref: '#/definitions/models.SystemDetails'
+      timestamp:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API сервиса мониторинга
+  title: Center API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Проверяет работоспособность сервиса
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Проверка состояния системы
+      tags:
+      - Health
+  /hosts:
+    get:
+      description: Возвращает список всех зарегистрированных хостов
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Host'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить список всех хостов
+      tags:
+      - Hosts
+    post:
+      consumes:
+      - application/json
+      description: Добавляет новый хост в систему
+      parameters:
+      - description: Данные хоста
+        in: body
+        name: host
+        required: true
+        schema:
+          $ref: '#/definitions/models.HostInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: ID созданного хоста
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Создать новый хост
+      tags:
+      - Hosts
+  /hosts/{id}:
+    delete:
+      description: Удаляет хост из системы по ID
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Удалить хост
+      tags:
+      - Hosts
+    get:
+      description: Возвращает информацию о хосте по его ID
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Host'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить хост по ID
+      tags:
+      - Hosts
+    put:
+      consumes:
+      - application/json
+      description: Обновляет информацию о существующем хосте
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Обновленные данные хоста
+        in: body
+        name: host
+        required: true
+        schema:
+          $ref: '#/definitions/models.HostInput'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Обновить данные хоста
+      tags:
+      - Hosts
+  /hosts/{id}/alerts:
+    get:
+      description: Возвращает все правила оповещений для указанного хоста
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.AlertRule'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить правила оповещений для хоста
+      tags:
+      - Alerts
+    post:
+      consumes:
+      - application/json
+      description: Создает новое правило оповещения для указанного хоста
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные правила оповещения
+        in: body
+        name: alert
+        required: true
+        schema:
+          $ref: '#/definitions/models.AlertInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: ID созданного правила
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Создать правило оповещения
+      tags:
+      - Alerts
+  /hosts/{id}/alerts/{alert_id}:
+    delete:
+      description: Удаляет правило оповещения по ID
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID правила оповещения
+        in: path
+        name: alert_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Удалить правило оповещения
+      tags:
+      - Alerts
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующее правило оповещения
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID правила оповещения
+        in: path
+        name: alert_id
+        required: true
+        type: integer
+      - description: Обновленные данные правила
+        in: body
+        name: alert
+        required: true
+        schema:
+          $ref: '#/definitions/models.AlertInput'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Обновить правило оповещения
+      tags:
+      - Alerts
+  /hosts/{id}/alerts/{alert_id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Изменяет статус активности правила оповещения
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID правила оповещения
+        in: path
+        name: alert_id
+        required: true
+        type: integer
+      - description: Статус активности
+        in: body
+        name: status
+        required: true
+        schema:
+          properties:
+            enabled:
+              type: boolean
+          type: object
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Включить/выключить правило оповещения
+      tags:
+      - Alerts
+  /hosts/{id}/containers:
+    get:
+      description: Возвращает все контейнеры для указанного хоста
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Container'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить контейнеры для хоста
+      tags:
+      - Containers
+    post:
+      consumes:
+      - application/json
+      description: Добавляет новый контейнер для мониторинга на указанном хосте
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные контейнера
+        in: body
+        name: container
+        required: true
+        schema:
+          $ref: '#/definitions/models.ContainerInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: ID созданного контейнера
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Добавить контейнер для мониторинга
+      tags:
+      - Containers
+  /hosts/{id}/containers/{container_id}:
+    delete:
+      description: Удаляет контейнер из списка мониторинга
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID контейнера
+        in: path
+        name: container_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Удалить контейнер из мониторинга
+      tags:
+      - Containers
+  /hosts/{id}/master:
+    put:
+      description: Назначает указанный хост мастер-хостом
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Установить мастер-хост
+      tags:
+      - Hosts
+  /hosts/{id}/processes:
+    get:
+      description: Возвращает все процессы для указанного хоста
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Process'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить процессы для хоста
+      tags:
+      - Processes
+    post:
+      consumes:
+      - application/json
+      description: Добавляет новый процесс для мониторинга на указанном хосте
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные процесса
+        in: body
+        name: process
+        required: true
+        schema:
+          $ref: '#/definitions/models.ProcessInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: ID созданного процесса
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Добавить процесс для мониторинга
+      tags:
+      - Processes
+  /hosts/{id}/processes/{process_id}:
+    delete:
+      description: Удаляет процесс из списка мониторинга
+      parameters:
+      - description: ID хоста
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID процесса
+        in: path
+        name: process_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Удалить процесс из мониторинга
+      tags:
+      - Processes
+  /hosts/master:
+    get:
+      description: Возвращает информацию о текущем мастер-хосте
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Host'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить мастер-хост
+      tags:
+      - Hosts
+  /metrics:
+    get:
+      description: Возвращает агрегированные метрики по всем хостам
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить все метрики
+      tags:
+      - Metrics
+    post:
+      consumes:
+      - application/json
+      description: Принимает и сохраняет метрики, отправленные агентом
+      parameters:
+      - description: Метрика
+        in: body
+        name: metrics
+        required: true
+        schema:
+          $ref: '#/definitions/models.HostMetricsResponse'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Принять метрики от агента
+      tags:
+      - Metrics
+  /metrics/{host_id}:
+    get:
+      description: Возвращает все метрики для указанного хоста
+      parameters:
+      - description: ID хоста
+        in: path
+        name: host_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить метрики для хоста
+      tags:
+      - Metrics
+  /metrics/{host_id}/containers:
+    get:
+      description: Возвращает метрики контейнеров для указанного хоста
+      parameters:
+      - description: ID хоста
+        in: path
+        name: host_id
+        required: true
+        type: integer
+      - description: Начало периода (RFC3339)
+        example: '"2023-01-01T00:00:00Z"'
+        in: query
+        name: from
+        type: string
+      - description: Конец периода (RFC3339)
+        example: '"2023-01-02T23:59:59Z"'
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ContainerMetrics'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить метрики контейнеров
+      tags:
+      - Metrics
+  /metrics/{host_id}/network:
+    get:
+      description: Возвращает сетевые метрики для указанного хоста
+      parameters:
+      - description: ID хоста
+        in: path
+        name: host_id
+        required: true
+        type: integer
+      - description: Начало периода (RFC3339)
+        example: '"2023-01-01T00:00:00Z"'
+        in: query
+        name: from
+        type: string
+      - description: Конец периода (RFC3339)
+        example: '"2023-01-02T23:59:59Z"'
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.NetworkMetrics'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить сетевые метрики
+      tags:
+      - Metrics
+  /metrics/{host_id}/processes:
+    get:
+      description: Возвращает метрики процессов для указанного хоста
+      parameters:
+      - description: ID хоста
+        in: path
+        name: host_id
+        required: true
+        type: integer
+      - description: Начало периода (RFC3339)
+        example: '"2023-01-01T00:00:00Z"'
+        in: query
+        name: from
+        type: string
+      - description: Конец периода (RFC3339)
+        example: '"2023-01-02T23:59:59Z"'
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ProcessMetrics'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить метрики процессов
+      tags:
+      - Metrics
+  /metrics/{host_id}/system:
+    get:
+      description: Возвращает системные метрики для указанного хоста
+      parameters:
+      - description: ID хоста
+        in: path
+        name: host_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.SystemMetrics'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить системные метрики
+      tags:
+      - Metrics
+swagger: "2.0"

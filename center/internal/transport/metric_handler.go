@@ -12,6 +12,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @title Center API
+// @version 1.0
+// @description API сервиса мониторинга
+// @host localhost:8080
+// @BasePath /api/
+
 type MetricHandler struct {
 	service *services.HostService
 }
@@ -27,12 +33,7 @@ func NewMetricHandler(service *services.HostService) *MetricHandler {
 // @Accept json
 // @Produce json
 //
-//	@Param metrics body struct {
-//	    System     *models.SystemMetrics    `json:"system"`
-//	    Processes  *models.ProcessMetrics   `json:"processes"`
-//	    Containers *models.ContainerMetrics `json:"containers"`
-//	    Network    *models.NetworkMetrics   `json:"network"`
-//	} true "Метрики"
+// @Param metrics body models.HostMetricsResponse true "Метрика"
 //
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
