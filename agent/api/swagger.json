@@ -107,12 +107,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "containers": {
-                                    "type": "array"
-                                }
-                            }
+                            "type": "object"
                         }
                     }
                 ],
@@ -182,12 +177,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "processes": {
-                                    "type": "array"
-                                }
-                            }
+                            "type": "object"
                         }
                     }
                 ],
@@ -302,7 +292,10 @@
                             "type": "object",
                             "properties": {
                                 "containers": {
-                                    "type": "array"
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
                                 },
                                 "host_id": {
                                     "type": "string"
@@ -350,7 +343,10 @@
                                     "type": "string"
                                 },
                                 "ports": {
-                                    "type": "array"
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
                                 },
                                 "timestamp": {
                                     "type": "string"
@@ -381,7 +377,10 @@
                                     "type": "string"
                                 },
                                 "processes": {
-                                    "type": "array"
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
                                 },
                                 "timestamp": {
                                     "type": "string"
@@ -449,7 +448,7 @@
                     }
                 },
                 "host_id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "ports": {
                     "type": "array",

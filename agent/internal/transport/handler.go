@@ -58,7 +58,7 @@ func (s *Server) getSystemMetrics(c *gin.Context) {
 // @Description Возвращает метрики отслеживаемых процессов
 // @Tags metrics
 // @Produce json
-// @Success 200 {object} object{host_id=string,timestamp=string,processes=array} "Метрики процессов"
+// @Success 200 {object} object{host_id=string,timestamp=string,processes=[]object} "Метрики процессов"
 // @Failure 400 {object} object{status=string,message=string} "Список отслеживаемых процессов не настроен"
 // @Router /api/metrics/processes [get]
 func (s *Server) getProcessMetrics(c *gin.Context) {
@@ -82,7 +82,7 @@ func (s *Server) getProcessMetrics(c *gin.Context) {
 // @Description Возвращает информацию о сетевых соединениях и открытых портах
 // @Tags metrics
 // @Produce json
-// @Success 200 {object} object{host_id=string,timestamp=string,ports=array} "Сетевые метрики"
+// @Success 200 {object} object{host_id=string,timestamp=string,ports=[]object} "Сетевые метрики"
 // @Router /api/metrics/network [get]
 func (s *Server) getNetworkMetrics(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
@@ -97,7 +97,7 @@ func (s *Server) getNetworkMetrics(c *gin.Context) {
 // @Description Возвращает метрики отслеживаемых Docker контейнеров
 // @Tags metrics
 // @Produce json
-// @Success 200 {object} object{host_id=string,timestamp=string,containers=array} "Метрики контейнеров"
+// @Success 200 {object} object{host_id=string,timestamp=string,containers=[]object} "Метрики контейнеров"
 // @Failure 400 {object} object{status=string,message=string} "Список отслеживаемых контейнеров не настроен"
 // @Router /api/metrics/containers [get]
 func (s *Server) getContainerMetrics(c *gin.Context) {
@@ -122,7 +122,7 @@ func (s *Server) getContainerMetrics(c *gin.Context) {
 // @Tags configuration
 // @Accept json
 // @Produce json
-// @Param request body object{processes=array} true "Массив имён процессов для отслеживания"
+// @Param request body object true "Массив имён процессов для отслеживания" example{ "processes": ["nginx", "redis"] }
 // @Success 200 {object} object{status=string,message=string} "Конфигурация успешно обновлена"
 // @Failure 400 {object} object{status=string,message=string} "Некорректный формат данных или пустой список"
 // @Failure 500 {object} object{status=string,message=string} "Внутренняя ошибка сервера"
@@ -169,7 +169,7 @@ func (s *Server) updateProcessConfig(c *gin.Context) {
 // @Tags configuration
 // @Accept json
 // @Produce json
-// @Param request body object{containers=array} true "Массив имён контейнеров для отслеживания"
+// @Param request body object true "Массив имён контейнеров для отслеживания"
 // @Success 200 {object} object{status=string,message=string} "Конфигурация успешно обновлена"
 // @Failure 400 {object} object{status=string,message=string} "Некорректный формат данных или пустой список"
 // @Failure 500 {object} object{status=string,message=string} "Внутренняя ошибка сервера"

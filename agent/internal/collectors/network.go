@@ -52,6 +52,11 @@ func NewNetworkCollector() *NetworkCollector {
 // 	return nil
 // }
 
+func (c *NetworkCollector) ChangeConfig(collType CollectorType, newconfig []string) {
+	if collType == Network {
+	}
+}
+
 func (c *NetworkCollector) Collect(metrics *models.AgentMetrics) error {
 	// Собираем TCP соединения
 	tcpConns, err := net.Connections("tcp")

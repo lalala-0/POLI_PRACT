@@ -15,6 +15,11 @@ func NewSystemCollector() *SystemCollector {
 	return &SystemCollector{}
 }
 
+func (c *SystemCollector) ChangeConfig(collType CollectorType, newconfig []string) {
+	if collType == System {
+	}
+}
+
 func (c *SystemCollector) Collect(metrics *models.AgentMetrics) error {
 	// Сбор CPU метрик
 	cpuPercent, err := cpu.Percent(time.Second, false)

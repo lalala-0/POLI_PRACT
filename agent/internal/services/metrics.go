@@ -4,6 +4,7 @@ import (
 	coll "agent/internal/collectors"
 	"agent/internal/config"
 	"agent/internal/models"
+	//"log"
 	"sync"
 	"time"
 )
@@ -56,10 +57,14 @@ func NewMetricsService(cfg *config.AgentConfig) *MetricsService {
 func (s *MetricsService) UpdateProcessConfig(processes []string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for _, process := range processes {
-		s.processConfig = append(s.processConfig, process)
+	//for _, process := range processes {
+	//	s.processConfig = append(s.processConfig, process)
+	//}
+	//s.Collectors = append(s.Collectors, coll.NewProcessCollector(processes))
+	s.processConfig = processes
+	for _, c := range s.Collectors {
+		c.ChangeConfig(coll.Process, processes)
 	}
-	s.Collectors = append(s.Collectors, coll.NewProcessCollector(processes))
 	s.processConfigSet = true
 	return nil
 }
@@ -82,14 +87,18 @@ func (s *MetricsService) IsProcessConfigSet() bool {
 func (s *MetricsService) UpdateContainerConfig(containers []string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for _, container := range containers {
-		s.containerConfig = append(s.containerConfig, container)
+	//for _, container := range containers {
+	//	s.containerConfig = append(s.containerConfig, container)
+	//}
+	//dcoll, err := coll.NewDockerCollector(containers)
+	//if err != nil {
+	//	return err
+	//}
+	//s.Collectors = append(s.Collectors, dcoll)
+	s.containerConfig = containers
+	for _, c := range s.Collectors {
+		c.ChangeConfig(coll.Docker, containers)
 	}
-	dcoll, err := coll.NewDockerCollector(containers)
-	if err != nil {
-		return err
-	}
-	s.Collectors = append(s.Collectors, dcoll)
 	s.containerConfigSet = true
 	return nil
 }

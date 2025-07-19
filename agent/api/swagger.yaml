@@ -7,7 +7,7 @@ definitions:
           $ref: '#/definitions/models.ContainerInfo'
         type: array
       host_id:
-        type: string
+        type: integer
       ports:
         items:
           $ref: '#/definitions/models.PortInfo'
@@ -183,9 +183,6 @@ paths:
         name: request
         required: true
         schema:
-          properties:
-            containers:
-              type: array
           type: object
       produces:
       - application/json
@@ -231,9 +228,6 @@ paths:
         name: request
         required: true
         schema:
-          properties:
-            processes:
-              type: array
           type: object
       produces:
       - application/json
@@ -310,6 +304,8 @@ paths:
           schema:
             properties:
               containers:
+                items:
+                  type: object
                 type: array
               host_id:
                 type: string
@@ -341,6 +337,8 @@ paths:
               host_id:
                 type: string
               ports:
+                items:
+                  type: object
                 type: array
               timestamp:
                 type: string
@@ -361,6 +359,8 @@ paths:
               host_id:
                 type: string
               processes:
+                items:
+                  type: object
                 type: array
               timestamp:
                 type: string

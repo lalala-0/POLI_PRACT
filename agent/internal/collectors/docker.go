@@ -28,6 +28,12 @@ func NewDockerCollector(containers []string) (*DockerCollector, error) {
 	}, nil
 }
 
+func (c *DockerCollector) ChangeConfig(collType CollectorType, newconfig []string) {
+	if collType == Docker {
+		c.containers = newconfig
+	}
+}
+
 func (c *DockerCollector) Collect(metrics *models.AgentMetrics) error {
 	ctx := context.Background()
 

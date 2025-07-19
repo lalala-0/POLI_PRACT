@@ -16,6 +16,12 @@ func NewProcessCollector(processes []string) *ProcessCollector {
 	}
 }
 
+func (c *ProcessCollector) ChangeConfig(collType CollectorType, newconfig []string) {
+	if collType == Process {
+		c.processes = newconfig
+	}
+}
+
 func (c *ProcessCollector) Collect(metrics *models.AgentMetrics) error {
 	processes, err := process.Processes()
 	if err != nil {
