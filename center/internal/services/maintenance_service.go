@@ -12,20 +12,23 @@ import (
 
 // MaintenanceService отвечает за фоновое обслуживание системы
 type MaintenanceService struct {
-	metricRepo repositories.MongoMetricRepository
-	hostRepo   pg_repo.PostgresHostRepository
-	config     config.MetricsConfig
+	metricRepo   repositories.MongoMetricRepository
+	hostRepo     pg_repo.PostgresHostRepository
+	alertService *AlertNotifierService
+	config       config.MetricsConfig
 }
 
 func NewMaintenanceService(
 	metricRepo repositories.MongoMetricRepository,
 	hostRepo pg_repo.PostgresHostRepository,
+	alertService *AlertNotifierService,
 	config config.MetricsConfig,
 ) *MaintenanceService {
 	return &MaintenanceService{
-		metricRepo: metricRepo,
-		hostRepo:   hostRepo,
-		config:     config,
+		metricRepo:   metricRepo,
+		hostRepo:     hostRepo,
+		alertService: alertService,
+		config:       config,
 	}
 }
 
@@ -45,6 +48,10 @@ func (s *MaintenanceService) StartCleanupRoutine(ctx context.Context) {
 			return
 		}
 	}
+}
+
+func (s *MaintenanceService) StartAlertMonitoringRoutine(ctx context.Context) {
+	s.alertService.AlertMonitor(ctx)
 }
 
 // cleanupOldMetrics удаляет метрики старше заданного срока
@@ -87,14 +94,18 @@ func (s *MaintenanceService) StartSelfCheckRoutine(ctx context.Context) {
 
 // selfCheck выполняет проверки работоспособности системы
 func (s *MaintenanceService) selfCheck(ctx context.Context) {
-	// Проверка подключения к БД
-	//if err := s.hostRepo.Ping(ctx); err != nil {
-	//	log.Printf("SELF-CHECK FAILED: PostgreSQL connection error: %v", err)
-	//}
+	//Проверка подключения к БД
+	err := s.hostRepo.Ping(ctx)
+	if err != nil {
+		log.Printf("SELF-CHECK FAILED: PostgreSQL connection error: %v", err)
+	}
+	s.alertService.recordCheckResult(err == nil)
 
-	if err := s.metricRepo.Ping(ctx); err != nil {
+	err = s.metricRepo.Ping(ctx)
+	if err != nil {
 		log.Printf("SELF-CHECK FAILED: MongoDB connection error: %v", err)
 	}
+	s.alertService.recordCheckResult(err == nil)
 
 	// Проверка количества активных хостов
 	hosts, err := s.hostRepo.GetAll(ctx)
@@ -102,6 +113,7 @@ func (s *MaintenanceService) selfCheck(ctx context.Context) {
 		log.Printf("SELF-CHECK FAILED: Could not retrieve hosts: %v", err)
 		return
 	}
+	s.alertService.recordCheckResult(err == nil)
 
 	activeCount := 0
 	for _, host := range hosts {
@@ -114,6 +126,8 @@ func (s *MaintenanceService) selfCheck(ctx context.Context) {
 		log.Println("SELF-CHECK WARNING: No active hosts detected")
 	}
 
+	s.alertService.recordCheckResult(activeCount != 0)
+
 	// Проверка мастер-хоста
 	master, err := s.hostRepo.GetMaster(ctx)
 	if err != nil || master == nil {
@@ -121,6 +135,6 @@ func (s *MaintenanceService) selfCheck(ctx context.Context) {
 	} else if master.Status != "active" {
 		log.Printf("SELF-CHECK FAILED: Master host %s is not active", master.Hostname)
 	}
-
+	s.alertService.recordCheckResult(err == nil)
 	log.Println("SELF-CHECK: System health verified")
 }

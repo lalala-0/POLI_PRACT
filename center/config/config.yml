@@ -69,7 +69,7 @@ alerts:
     username: "a@gmail.com"
     password: "45"
 
-  failure_threshold_percent: 90
+  failure_threshold_percent: 0
   interval_seconds: 60
 
 initial_data:
@@ -124,15 +124,15 @@ initial_data:
           threshold_value: 1 # 1 = LISTEN, 0 = other
           condition: "="
           enabled: true
-#    - hostname: "server-2"
-#      ip_address: 192.168.58.128
-#      agent_port: 8081
-#      priority: 5
-#      is_master: false
-#      processes:
-#        - "nginx"
-#        - "postgres"
-#        - "redis"
-#      containers:
-#        - "build-mongodb-1"
-#        - "build-postgres-1"
+    - hostname: "server-2"
+      ip_address: 192.168.58.128
+      agent_port: 8081
+      priority: 5
+      is_master: false
+      processes:
+        - "nginx"
+        - "postgres"
+        - "redis"
+      containers:
+        - "build-mongodb-1"
+        - "build-postgres-1"

@@ -53,6 +53,7 @@ func (s *PollerService) Start(ctx context.Context) {
 func (s *PollerService) pollHosts(ctx context.Context) {
 	log.Println("Polling hosts...")
 	hosts, err := s.hostService.GetAllHosts(ctx)
+	s.alertService.recordCheckResult(err == nil)
 	if err != nil {
 		log.Printf("Error getting hosts: %v", err)
 		return
@@ -73,8 +74,7 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 	if err != nil {
 		log.Printf("[%s] Error creating request: %v", host.Hostname, err)
 		s.updateHostStatus(ctx, host.ID, "error")
-		s.alertService.recordPollResult(host.ID, false)
-
+		s.alertService.recordCheckResult(false)
 		return
 	}
 
@@ -85,7 +85,7 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 	if err != nil {
 		log.Printf("[%s] Polling error: %v", host.Hostname, err)
 		s.updateHostStatus(ctx, host.ID, "down")
-		s.alertService.recordPollResult(host.ID, false)
+		s.alertService.recordCheckResult(false)
 		return
 	}
 
@@ -94,14 +94,14 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("[%s] Unexpected status: %d", host.Hostname, resp.StatusCode)
 		s.updateHostStatus(ctx, host.ID, "unstable")
-		s.alertService.recordPollResult(host.ID, false)
+		s.alertService.recordCheckResult(false)
 		return
 	}
 
 	var metrics models.Metrics
 	if err := json.NewDecoder(resp.Body).Decode(&metrics); err != nil {
 		log.Printf("[%s] Error decoding metrics: %v", host.Hostname, err)
-		s.alertService.recordPollResult(host.ID, false)
+		s.alertService.recordCheckResult(false)
 		return
 	}
 
@@ -114,7 +114,7 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 	s.hostService.ProcessHostMetrics(ctx, host.ID, metrics)
 
 	log.Printf("[%s] Metrics collected in %v", host.Hostname, duration)
-	s.alertService.recordPollResult(host.ID, true)
+	s.alertService.recordCheckResult(true)
 	// Вызов проверки алертов после успешного получения метрик
 	s.alertService.CheckHostAlerts(ctx, &host, &metrics)
 
@@ -122,9 +122,11 @@ func (s *PollerService) pollHost(ctx context.Context, host models.Host) {
 
 // updateHostStatus обновляет статус хоста в БД
 func (s *PollerService) updateHostStatus(ctx context.Context, hostID int, status string) {
-	if err := s.hostService.UpdateHostStatus(ctx, hostID, status); err != nil {
+	err := s.hostService.UpdateHostStatus(ctx, hostID, status)
+	if err != nil {
 		log.Printf("Error updating host status: %v", err)
 	}
+	s.alertService.recordCheckResult(err == nil)
 }
 
 // ProcessHostMetrics обрабатывает и сохраняет метрики хоста
@@ -136,7 +138,8 @@ func (s *HostService) ProcessHostMetrics(ctx context.Context, hostID int, metric
 		System:    metrics.SystemMetrics,
 	}
 
-	if err := s.SaveSystemMetrics(ctx, &systemMetrics); err != nil {
+	err := s.SaveSystemMetrics(ctx, &systemMetrics)
+	if err != nil {
 		log.Printf("Error saving system metrics: %v", err)
 	}
 

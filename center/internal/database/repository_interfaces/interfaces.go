@@ -22,7 +22,7 @@ type HostRepository interface {
 	UpdateStatus(ctx context.Context, id int, status string) error
 	GetMaster(ctx context.Context) (*models.Host, error)
 	SetMaster(ctx context.Context, id int) error
-	//Ping(ctx context.Context) error
+	Ping(ctx context.Context) error
 }
 
 // ProcessRepository интерфейс для работы с процессами в БД

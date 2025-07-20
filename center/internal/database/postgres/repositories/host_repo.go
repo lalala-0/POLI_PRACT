@@ -253,3 +253,13 @@ func (r *PostgresHostRepository) SetMaster(ctx context.Context, id int) error {
 
 	return tx.Commit()
 }
+
+// Ping проверяет соединение с базой данных
+func (r *PostgresHostRepository) Ping(ctx context.Context) error {
+	// Создаем контекст с таймаутом для проверки соединения
+	pingCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	// Используем PingContext для проверки соединения
+	return r.db.PingContext(pingCtx)
+}

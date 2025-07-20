@@ -16,26 +16,28 @@ import (
 	"time"
 )
 
-type pollResult struct {
-	Timestamp time.Time
-	Success   bool
+type checkResult struct {
+	success int
+	fail    int
 }
 
 type AlertNotifierService struct {
-	cfg         config.AlertsConfig // конфигурация из YAML
-	hostService *HostService
-	//failLog     map[int][]pollResult
-	alertRules map[int][]models.AlertRule // Кэш правил алертов
-	logMu      sync.Mutex
-	ruleMu     sync.RWMutex
+	cfg           config.AlertsConfig // конфигурация из YAML
+	hostService   *HostService
+	checksCounter *checkResult
+	alertRules    map[int][]models.AlertRule // Кэш правил алертов
+	logMu         sync.Mutex
+	ruleMu        sync.RWMutex
 }
 
 // Конструктор
 func NewAlertNotifierService(cfg config.AlertsConfig, hostService *HostService) *AlertNotifierService {
+	checksCounter := &checkResult{0, 0}
 	service := &AlertNotifierService{
-		cfg:         cfg,
-		hostService: hostService,
-		alertRules:  make(map[int][]models.AlertRule),
+		cfg:           cfg,
+		hostService:   hostService,
+		checksCounter: checksCounter,
+		alertRules:    make(map[int][]models.AlertRule),
 	}
 	service.refreshAlertRules(context.Background())
 	// Загрузка правил при инициализации
@@ -326,20 +328,22 @@ func SendEmailAlert(cfg config.EmailConfig, subject, message string) error {
 	return nil
 }
 
-func (s *AlertNotifierService) recordPollResult(hostID int, success bool) {
-	//s.logMu.Lock()
-	//defer s.logMu.Unlock()
-	//
-	//s.failLog[hostID] = append(s.failLog[hostID], pollResult{
-	//	Timestamp: time.Now(),
-	//	Success:   success,
-	//})
+func (s *AlertNotifierService) recordCheckResult(success bool) {
+	s.logMu.Lock()
+	defer s.logMu.Unlock()
+	if success {
+		s.checksCounter.success++
+	} else {
+		s.checksCounter.fail++
+	}
 }
 
-//// Start запускает мониторинг алертов
+//
+//// Start запускает мониторинг
 //func (s *AlertNotifierService) Start(ctx context.Context) {
 //	go s.alertMonitor(ctx)
 //}
+
 //
 //// AfterPoll вызывается после каждого цикла опроса хостов
 //func (s *AlertNotifierService) AfterPoll(results map[int]bool) {
@@ -347,67 +351,35 @@ func (s *AlertNotifierService) recordPollResult(hostID int, success bool) {
 //		s.recordPollResult(hostID, success)
 //	}
 //}
-//
-//func (s *AlertNotifierService) alertMonitor(ctx context.Context) {
-//	ticker := time.NewTicker(time.Duration(s.cfg.IntervalSeconds) * time.Second)
-//	defer ticker.Stop()
-//
-//	for {
-//		select {
-//		case <-ctx.Done():
-//			return
-//		case <-ticker.C:
-//			s.checkAlerts(ctx)
-//		}
-//	}
-//}
-//
-//func (s *AlertNotifierService) checkAlerts(ctx context.Context) {
-//	s.logMu.Lock()
-//	defer s.logMu.Unlock()
-//
-//	now := time.Now()
-//	cutoff := now.Add(-time.Duration(s.cfg.IntervalSeconds) * time.Second)
-//
-//	for hostID, logs := range s.failLog {
-//		var recent []pollResult
-//		var failed int
-//
-//		// фильтрация по времени
-//		for _, l := range logs {
-//			if l.Timestamp.After(cutoff) {
-//				recent = append(recent, l)
-//				if !l.Success {
-//					failed++
-//				}
-//			}
-//		}
-//
-//		// сохраняем только свежие
-//		s.failLog[hostID] = recent
-//
-//		total := len(recent)
-//		if total == 0 {
-//			continue
-//		}
-//
-//		failureRate := float64(failed) / float64(total) * 100
-//
-//		// Проверяем порог срабатывания
-//		if failureRate >= s.cfg.FailureThresholdPercent {
-//			host, err := s.hostService.GetHost(ctx, hostID)
-//			if err != nil {
-//				log.Printf("Alert error: failed to get host %d: %v", hostID, err)
-//				continue
-//			}
-//
-//			message := fmt.Sprintf("🚨 ALERT for host %s (%s): %.0f%% failures in last %d seconds",
-//				host.Hostname, host.IPAddress, failureRate, s.cfg.IntervalSeconds)
-//
-//			log.Println(message)
-//
-//			// отправка в Telegram и Email
-//			go s.sendAlert(message)
-//		}
-//	}
-//}
+
+func (s *AlertNotifierService) AlertMonitor(ctx context.Context) {
+	ticker := time.NewTicker(time.Duration(s.cfg.IntervalSeconds) * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			s.checksCounterAlerts()
+		}
+	}
+}
+
+func (s *AlertNotifierService) checksCounterAlerts() {
+	s.logMu.Lock()
+	defer s.logMu.Unlock()
+	failureRate := float64(s.checksCounter.fail) / float64(s.checksCounter.fail+s.checksCounter.success) * 100.
+	s.checksCounter.success = 0
+	s.checksCounter.fail = 0
+	// Проверяем порог срабатывания
+	if failureRate >= s.cfg.FailureThresholdPercent {
+		message := fmt.Sprintf("🚨 ALERT Monitoring center failed: %.0f%% failures in last %d seconds",
+			failureRate, s.cfg.IntervalSeconds)
+
+		log.Println(message)
+
+		// отправка в Telegram и Email
+		go s.sendAlert(message)
+	}
+}

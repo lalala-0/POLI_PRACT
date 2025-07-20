@@ -94,6 +94,7 @@ func NewApp(ctx context.Context, cfg *config.AppConfig) *App {
 	maintenanceService := services.NewMaintenanceService(
 		*metricRepo,
 		*hostRepo,
+		alertService,
 		cfg.Metrics,
 	)
 
@@ -174,12 +175,6 @@ func (a *App) Run(ctx context.Context, wg *sync.WaitGroup) {
 		a.maintenanceSvc.StartCleanupRoutine(ctx)
 	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		a.maintenanceSvc.StartSelfCheckRoutine(ctx)
-	}()
-
 	// Отправка начальной конфигурации на агентов
 	wg.Add(1)
 	go func() {
@@ -192,6 +187,19 @@ func (a *App) Run(ctx context.Context, wg *sync.WaitGroup) {
 			return
 		}
 	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		a.maintenanceSvc.StartSelfCheckRoutine(ctx)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		a.maintenanceSvc.StartAlertMonitoringRoutine(ctx)
+	}()
+
 }
 
 // Close освобождает ресурсы приложения
