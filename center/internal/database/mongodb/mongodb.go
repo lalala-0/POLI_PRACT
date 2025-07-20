@@ -1,7 +1,7 @@
 package mgdb
 
 import (
-	"center/internal/models"
+	"center/internal/config"
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
@@ -26,7 +26,7 @@ type MongoDatabase struct {
 	Database *mongo.Database
 }
 
-func InitMongo(cfg models.MongoDBConfig, tllDays int) (*MongoDatabase, error) {
+func InitMongo(cfg config.MongoDBConfig, tllDays int) (*MongoDatabase, error) {
 	// Создаем контекст с таймаутом подключения
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.ConnectTimeout)
 	defer cancel()

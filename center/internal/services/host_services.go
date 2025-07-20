@@ -183,38 +183,11 @@ func (s *HostService) CreateAlertRule(ctx context.Context, hostID int, alertInpu
 		Enabled:        alertInput.Enabled,
 	}
 	return s.AlertRepo.Create(ctx, rule)
+
 }
-
-// type AlertService struct {
-// 	logger *logrus.Logger
-// }
-
-// func (a *AlertService) CheckAlerts(host models.Host, metrics models.Metrics) {
-// 	for _, alert := range host.Alerts {
-// 		if !alert.Enabled {
-// 			continue
-// 		}
-// 		// Логика проверки метрик
-// 		if alert.MetricName == "cpu_usage_percent" {
-// 			if alert.Condition == ">" && metrics.CPU.UsagePercent > alert.Threshold {
-// 				a.logger.Warnf("ALERT for %s: CPU usage %.2f%%", host.Hostname, metrics.CPU.UsagePercent)
-// 			}
-// 		}
-// 		// Аналогично для RAM, Disk и др.
-// 	}
-// }
-
-// type MaintenanceService struct {
-// 	metricsRepo *repositories.MetricsRepository
-// 	config      *config.Config
-// }
-
-// func (m *MaintenanceService) StartCleanupRoutine() {
-// 	ticker := time.NewTicker(24 * time.Hour)
-// 	for range ticker.C {
-// 		m.metricsRepo.CleanupOldMetrics(m.config.Metrics.TTLDays)
-// 	}
-// }
+func (s *HostService) GetAlertsByHostID(ctx context.Context, hostID int) ([]models.AlertRule, error) {
+	return s.AlertRepo.GetByHostID(ctx, hostID)
+}
 
 // Metrics Operations
 func (s *HostService) SaveSystemMetrics(ctx context.Context, metrics *models.SystemMetrics) error {
@@ -268,6 +241,18 @@ func (s *HostService) LoadInitialData(ctx context.Context, cfg *config.AppConfig
 		for _, container := range hostCfg.Containers {
 			if _, err := s.AddContainer(ctx, hostID, container); err != nil {
 				log.Printf("Failed to add container %s to host %s: %v", container, hostCfg.Hostname, err)
+			}
+		}
+
+		// Добавление правил оповещений
+		for _, alert := range hostCfg.Alerts {
+			if _, err := s.CreateAlertRule(ctx, hostID, models.AlertInput{
+				MetricName:     alert.MetricName,
+				ThresholdValue: alert.ThresholdValue,
+				Condition:      alert.Condition,
+				Enabled:        alert.Enabled,
+			}); err != nil {
+				log.Printf("Failed to add alert for %s to host %s: %v", alert.MetricName, hostCfg.Hostname, err)
 			}
 		}
 

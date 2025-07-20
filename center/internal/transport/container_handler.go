@@ -3,6 +3,7 @@ package api
 import (
 	"center/internal/models"
 	"center/internal/services"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -70,17 +71,25 @@ func (h *ContainerHandler) CreateContainer(c *gin.Context) {
 
 	ctx := c.Request.Context()
 	id, err := h.service.AddContainer(ctx, hostID, containerInput.ContainerName)
+	//log.Println("-----------------------------", err)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	//log.Println("-----------------------------", hostID)
 	host, err := h.service.GetHost(ctx, hostID)
+	//log.Println("-----------------------------", err)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	if err = h.service.SendContainerConfigurationToAgent(ctx, *host); err != nil {
+
+	log.Println("-----------------------------", host)
+	log.Println("-----------------------------", *host)
+	err = h.service.SendContainerConfigurationToAgent(ctx, *host)
+	log.Println("-----------------------------", err)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 

@@ -33,7 +33,7 @@ type App struct {
 	router         *gin.Engine
 }
 
-func NewApp(cfg *config.AppConfig) *App {
+func NewApp(ctx context.Context, cfg *config.AppConfig) *App {
 	// Инициализация логгера
 	//logger := log.New(os.Stdout, "[MONITORING] ", log.LstdFlags|log.Lshortfile)
 
@@ -77,8 +77,17 @@ func NewApp(cfg *config.AppConfig) *App {
 		*metricRepo,
 	)
 
+	// Загрузка начальных данных
+	if err := hostService.LoadInitialData(ctx, cfg); err != nil {
+		log.Printf("Initial data loading error: %v", err)
+	}
+
+	// Создаем сервис алертов
+	alertService := services.NewAlertNotifierService(cfg.Alerts, hostService)
+
 	pollerService := services.NewPollerService(
 		hostService,
+		alertService,
 		cfg.Metrics.PollInterval,
 	)
 
@@ -92,7 +101,7 @@ func NewApp(cfg *config.AppConfig) *App {
 	hostHandler := api.NewHostHandler(hostService)
 	processHandler := api.NewProcessHandler(hostService)
 	containerHandler := api.NewContainerHandler(hostService)
-	alertHandler := api.NewAlertHandler(hostService)
+	alertHandler := api.NewAlertHandler(hostService, alertService)
 	metricHandler := api.NewMetricHandler(hostService)
 
 	// Создаем общий обработчик
@@ -135,10 +144,12 @@ func NewApp(cfg *config.AppConfig) *App {
 
 func (a *App) Run(ctx context.Context, wg *sync.WaitGroup) {
 
-	// Загрузка начальных данных
-	if err := a.hostService.LoadInitialData(ctx, a.cfg); err != nil {
-		log.Printf("Initial data loading error: %v", err)
-	}
+	//// Загрузка начальных данных
+	//if err := a.hostService.LoadInitialData(ctx, a.cfg); err != nil {
+	//	log.Printf("Initial data loading error: %v", err)
+	//}
+	//// Принудительное обновление кэша
+	//a.HostHandler.alertService.InvalidateAlertRules()
 
 	// Запуск HTTP сервера
 	wg.Add(1)

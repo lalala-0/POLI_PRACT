@@ -11,8 +11,6 @@ import (
 	"syscall"
 )
 
-///home/polina/Pract/POLI_PRACT/center
-
 func main() {
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
@@ -34,7 +32,7 @@ func main() {
 	defer cancel()
 
 	// Инициализация приложения
-	application := app.NewApp(cfg)
+	application := app.NewApp(ctx, cfg)
 
 	// Запуск горутин с использованием WaitGroup
 	var wg sync.WaitGroup

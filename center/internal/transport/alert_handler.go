@@ -3,6 +3,7 @@ package api
 import (
 	"center/internal/models"
 	"center/internal/services"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -11,11 +12,15 @@ import (
 
 // AlertHandler обработчик оповещений
 type AlertHandler struct {
-	service *services.HostService
+	hostService  *services.HostService
+	alertService *services.AlertNotifierService
 }
 
-func NewAlertHandler(service *services.HostService) *AlertHandler {
-	return &AlertHandler{service: service}
+func NewAlertHandler(hostService *services.HostService, alertService *services.AlertNotifierService) *AlertHandler {
+	return &AlertHandler{
+		hostService:  hostService,
+		alertService: alertService,
+	}
 }
 
 // GetAlertsByHostID
@@ -36,7 +41,7 @@ func (h *AlertHandler) GetAlertsByHostID(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	alerts, err := h.service.AlertRepo.GetByHostID(ctx, hostID)
+	alerts, err := h.hostService.AlertRepo.GetByHostID(ctx, hostID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -70,11 +75,14 @@ func (h *AlertHandler) CreateAlert(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	id, err := h.service.CreateAlertRule(ctx, hostID, alertInput)
+	id, err := h.hostService.CreateAlertRule(ctx, hostID, alertInput)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	log.Println("                               Create alert")
+	// Принудительное обновление кэша
+	h.alertService.InvalidateAlertRules()
 
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
@@ -106,7 +114,7 @@ func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	alert, err := h.service.AlertRepo.GetByID(ctx, alertID)
+	alert, err := h.hostService.AlertRepo.GetByID(ctx, alertID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -127,11 +135,14 @@ func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 	alert.Condition = alertInput.Condition
 	alert.Enabled = alertInput.Enabled
 
-	if err := h.service.AlertRepo.Update(ctx, alert); err != nil {
+	if err := h.hostService.AlertRepo.Update(ctx, alert); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	log.Println("                               Update alert")
+	// Принудительное обновление кэша
+	h.alertService.InvalidateAlertRules()
 	c.Status(http.StatusNoContent)
 }
 
@@ -160,7 +171,7 @@ func (h *AlertHandler) DeleteAlert(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	alert, err := h.service.AlertRepo.GetByID(ctx, alertID)
+	alert, err := h.hostService.AlertRepo.GetByID(ctx, alertID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -170,10 +181,13 @@ func (h *AlertHandler) DeleteAlert(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.AlertRepo.Delete(ctx, alertID); err != nil {
+	if err := h.hostService.AlertRepo.Delete(ctx, alertID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	log.Println("                               Delete alert")
+	// Принудительное обновление кэша
+	h.alertService.InvalidateAlertRules()
 
 	c.Status(http.StatusNoContent)
 }
@@ -213,7 +227,7 @@ func (h *AlertHandler) EnableDisableAlert(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	alert, err := h.service.AlertRepo.GetByID(ctx, alertID)
+	alert, err := h.hostService.AlertRepo.GetByID(ctx, alertID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -223,10 +237,13 @@ func (h *AlertHandler) EnableDisableAlert(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.AlertRepo.SetEnabled(ctx, alertID, status.Enabled); err != nil {
+	if err := h.hostService.AlertRepo.SetEnabled(ctx, alertID, status.Enabled); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	log.Println("                               En/Dis alert")
+	// Принудительное обновление кэша
+	h.alertService.InvalidateAlertRules()
 	c.Status(http.StatusNoContent)
 }

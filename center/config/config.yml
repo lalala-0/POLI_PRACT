@@ -55,17 +55,19 @@ logging:
 
 alerts:
   telegram:
-    token: "<YOUR_BOT_TOKEN>"
-    chat_id: "<CHAT_ID>"
+    token: "7490774913:AAG1xgAyR63-jEdmSIYE8-h__1yS1QyXuno"
+    chat_ids:
+      - "1139325406"
+      - "-1002496179321"
 
   email:
     to:
-      - "admin1@example.com"
-      - "admin2@example.com"
-    smtp_host: "smtp.example.com"
-    smtp_port: 587
-    username: "your_email@example.com"
-    password: "email_password"
+      - "a1@gmail.com"
+      - "a2@gmail.com"
+    smtp_host: "smtp.gmail.com"
+    smtp_port: 465
+    username: "a@gmail.com"
+    password: "45"
 
   failure_threshold_percent: 90
   interval_seconds: 60
@@ -85,13 +87,52 @@ initial_data:
       containers:
         - "build-mongodb-1"
         - "build-postgres-1"
+        - "build-mongodb-1"
+      alerts:
+        # Системные метрики
+        - metric_name: "system.cpu_usage_percent"
+          threshold_value: 1.0
+          condition: ">"
+          enabled: true
+        - metric_name: "system.memory_usage_percent"
+          threshold_value: 1.0
+          condition: ">"
+          enabled: true
+        - metric_name: "system.cpu_usage_percent"
+          threshold_value: 1.0
+          condition: "<"
+          enabled: true
+
+        # Метрики процессов
+        - metric_name: "process.postgres.cpu_percent"
+          threshold_value: 1.0
+          condition: ">"
+          enabled: true
+
+        # Метрики контейнеров
+        - metric_name: "container.build-mongodb-1.status"
+          threshold_value: 1 # 1 = running, 0 = stopped
+          condition: "="
+          enabled: true
+        - metric_name: "container.build-mongodb-1.cpu_percent"
+          threshold_value: 1.0
+          condition: ">"
+          enabled: true
+
+        # Сетевые метрики
+        - metric_name: "network.80.status"
+          threshold_value: 1 # 1 = LISTEN, 0 = other
+          condition: "="
+          enabled: true
 #    - hostname: "server-2"
-#      ip_address: "192.168.1.102"
+#      ip_address: 192.168.58.128
 #      agent_port: 8081
 #      priority: 5
 #      is_master: false
 #      processes:
 #        - "nginx"
+#        - "postgres"
 #        - "redis"
 #      containers:
-#        - "cache-redis"
+#        - "build-mongodb-1"
+#        - "build-postgres-1"

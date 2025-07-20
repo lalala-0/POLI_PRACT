@@ -18,7 +18,7 @@ func NewPostgresHostRepository(db *sql.DB) *PostgresHostRepository {
 }
 
 func (r *PostgresHostRepository) GetByID(ctx context.Context, id int) (*models.Host, error) {
-	query := `SELECT id, hostname, ip_address, agent_port, priority, is_master, status, created_at, updated_at FROM hosts WHERE id = $1`
+	query := `SELECT id, hostname, ip_address, agent_port,  priority, is_master, status, created_at, updated_at FROM hosts WHERE id = $1`
 
 	var host models.Host
 	err := r.db.QueryRowContext(ctx, query, id).Scan(&host.ID, &host.Hostname, &host.IPAddress,

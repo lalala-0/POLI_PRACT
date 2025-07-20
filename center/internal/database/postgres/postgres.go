@@ -3,7 +3,7 @@ package db
 //package postgres
 
 import (
-	"center/internal/models"
+	"center/internal/config"
 	"database/sql"
 	"fmt"
 	"log"
@@ -32,7 +32,7 @@ var DB *sql.DB
 //	ConnMaxLifetime time.Duration
 //}
 
-func InitPostgres(cfg models.PostgresConfig) error {
+func InitPostgres(cfg config.PostgresConfig) error {
 	connStr := generateConnectionString(cfg)
 	var err error
 	DB, err = sql.Open(cfg.Driver, connStr)
@@ -48,7 +48,7 @@ func InitPostgres(cfg models.PostgresConfig) error {
 	return nil
 }
 
-func generateConnectionString(cfg models.PostgresConfig) string {
+func generateConnectionString(cfg config.PostgresConfig) string {
 	switch cfg.Driver {
 	case "postgres", "pq":
 		if cfg.SSLMode == "" {
@@ -79,7 +79,7 @@ func generateConnectionString(cfg models.PostgresConfig) string {
 	}
 }
 
-func configureConnectionPool(cfg models.PostgresConfig) {
+func configureConnectionPool(cfg config.PostgresConfig) {
 	//максимальное количество одновременно открытых соединений с БД
 	DB.SetMaxOpenConns(int(cfg.MaxOpenConns))
 	//количество неактивных соединений, которые сохраняются в пуле
